@@ -1,69 +1,155 @@
 # EDUFLOW SESSION RESUME CHECKPOINT
 
-**Created:** 2026-08-02 14:25 UTC  
-**Session:** 2 — Business Logic Tests + Quality Gates  
-**Status:** OPTIONS A & D COMPLETE — C and B remaining
+**Created:** 2026-08-02 21:45 UTC  
+**Session:** 3 — UI Redesign + Theme System  
+**Status:** SESSION IN PROGRESS — Theme system built, dashboard started
 
 ---
 
-## WHAT WAS COMPLETED
+## SESSION 3 SUMMARY
 
-### Option A: Business Logic Tests ✅ COMPLETE
-- **12 test files, 101 API tests** (up from 16 auth-only tests)
-- **Coverage: 95.59% statements, 95.76% lines, 99.23% functions, 76.42% branches**
-- Coverage thresholds enforced in vitest.config.ts
-- New `test:coverage` script + `@vitest/coverage-v8` installed
-- Test files: students, face, attendance, assignments, notices, notifications, analytics, reports, faculty, ai, misc (health/404/error handler/config), plus existing auth
+### Auth UI Redesign ✅
+- Analyzed existing Login/Register pages, auth context, API client, routing, styles, design tokens
+- Created Superdesign project and init files (`.superdesign/init/`, `.superdesign/design-system.md`)
+- Generated pixel-perfect baseline draft + premium experiment draft on canvas
+- Built experimental auth components: `ExperimentalAuthLayout`, `ExperimentalAuthCard`, `ExperimentalAuthForm`, `ExperimentalPasswordField`
+- Built experimental pages: `AuthExperimentLoginPage`, `AuthExperimentRegisterPage`
+- Connected to existing `useAuth()` — real cookie-based auth, no mocks
+- Made experimental design the default, deleted old `LoginPage.tsx` and `RegisterPage.tsx`
+- 12/12 Playwright tests passing
+- Committed as `cbb77d7` and pushed to `main`
 
-### Option D: Quality Gates ✅ COMPLETE
+### Master Design System ✅
+- Updated `.superdesign/design-system.md` with full master design specification
+- Three-theme system: Dark, Light, Glass
+- Centralized CSS variable tokens (`--theme-*`)
+- Component consistency rules, typography scale, spacing grid, animation guidelines
 
-**Browser tests fixed (13/13 passing):**
-- Fixed all Playwright selector mismatches (cookie names, button text, form labels)
-- **Fixed BUG-005:** AppShell never rendered — ProtectedRoute didn't wrap Outlet with AppShell
-- **Fixed BUG-006:** AppShell crashes on `user?.name.charAt(0)` when user is null
+### Centralized Theme System ✅
+- Created `src/theme/ThemeContext.tsx` — ThemeProvider with localStorage persistence
+- Added 3 complete theme token sets in `styles.css` via `[data-theme]` CSS selectors
+- Dark: `#0B0F14` bg, `#140A08` surface, white/10 borders
+- Light: `#F8F9FA` bg, `#FFFFFF` surface, `#E2E8F0` borders
+- Glass: `#0B0F14` bg, `rgba(20,10,8,0.32)` surface, orange/30 borders, 18px blur
+- Wired ThemeProvider into `App.tsx`
 
-**ESLint + Prettier configured:**
-- ESLint v10 flat config (`eslint.config.mjs`) with typescript-eslint + react-hooks
-- Prettier (`.prettierrc`) for consistent formatting
-- Root scripts: `lint`, `lint:fix`, `format`, `format:check`
-- 0 errors, 2 intentional warnings (data-fetching useEffect deps)
+### Experimental Dashboard ✅
+- Created `src/components/AppShellExperiment.tsx` — theme-aware shell with sidebar, inline theme switcher (3 buttons: Dark/Light/Glass), mobile menu with Framer Motion
+- Created `src/components/ProtectedRouteExperiment.tsx` — auth gate for experimental routes
+- Created `src/pages/DashboardExperimentPage.tsx` — premium dashboard with staggered stat cards, quick actions, date display, Framer Motion entrance animations
+- All colors use CSS variables (`--theme-*`), not hardcoded hex
+- Accessible: labels, aria-pressed on theme buttons, reduced motion support
 
-**CI workflow created:**
-- `.github/workflows/ci.yml` — Typecheck, Lint, API tests, Web tests, Build, Playwright
-
-### Bugs Fixed
-- **BUG-003:** Invalid date strings → 500 instead of 400 (z.coerce.date fix)
-- **BUG-005:** AppShell never mounted in route tree
-- **BUG-006:** AppShell charAt crash on null user
-- **BUG-004:** Analytics trend test timezone mismatch (test-only)
-
----
-
-## VERIFICATION SUMMARY
-
-| Check | Status |
-|-------|--------|
-| Typecheck | ✅ All workspaces |
-| Lint | ✅ 0 errors |
-| API tests | ✅ 101/101 |
-| Web tests | ✅ 1/1 |
-| Playwright | ✅ 13/13 |
-| Coverage | ✅ 95.59% stmts |
-| Build | ✅ All workspaces |
+### Verification ✅
+| Gate | Status |
+|------|--------|
+| Typecheck | Clean |
+| Lint | 0 errors (3 pre-existing warnings) |
+| Web tests | 1/1 passing |
 
 ---
 
-## REMAINING WORK
+## GIT HISTORY
 
-**Option C:** ML integration research/planning  
-**Option B:** Documentation for Phase 3+  
+```
+cbb77d7  Redesign auth UI: premium glass card, Framer Motion, accessible forms
+3e8c5c2  Revert Vercel changes
+d923910  Fix Vercel build: explicit build order via root script
+c8fc8a0  Fix build order: shared types before apps
+1718db4  Revert Vercel changes
+e0e66ae  Vercel deployment config + API_URL env var support
+f166c0e  EduFlow: full monorepo with tests, lint, CI, live camera attendance
+```
+
+**Remote:** https://github.com/Vraj1806/EduFLow
 
 ---
 
-## ENVIRONMENT STATE
+## WHAT EXISTS NOW
 
-**Dev Servers:** Need `npm run dev` to start  
-**Database:** SQLite at `apps/api/prisma/dev.db`  
-**Admin Credentials:** `admin@eduflow.local` / `rBn5u+3h0/ZfNc9d`  
-**Test Command:** `npm test` (unit) / `npx playwright test` (browser)  
-**Coverage:** `npm run test:coverage -w apps/api`
+### Routes
+| Route | Component | Status |
+|-------|-----------|--------|
+| `/`, `/login` | `AuthExperimentLoginPage` | Production (new default) |
+| `/register` | `AuthExperimentRegisterPage` | Production (new default) |
+| `/hero` | `HeroPage` | Unchanged |
+| `/dashboard` | `DashboardPage` | Old (original dark only) |
+| `/dashboard/students` | `StudentsPage` | Unchanged |
+| `/dashboard/attendance` | `AttendancePage` | Unchanged |
+| `/dashboard/assignments` | `AssignmentsPage` | Unchanged |
+| `/dashboard/notices` | `NoticesPage` | Unchanged |
+| `/dashboard/analytics` | `AnalyticsPage` | Unchanged |
+| `/dashboard/reports` | `ReportsPage` | Unchanged |
+| `/dashboard/settings` | `SettingsPage` | Unchanged |
+| `/dashboard-experiment` | `DashboardExperimentPage` | **NEW — experimental** |
+
+### Theme System
+- `src/theme/ThemeContext.tsx` — ThemeProvider + useTheme hook
+- CSS tokens: `--theme-bg`, `--theme-surface`, `--theme-border`, `--theme-fg`, `--theme-muted`, `--theme-primary`, `--theme-primary-fg`, `--theme-primary-hover`, `--theme-success/warning/danger/info`, `--theme-input-*`, `--theme-card-shadow`, `--theme-sidebar-bg`
+- 3 themes: Dark (default), Light, Glass
+- Persisted to `localStorage` key `eduflow-theme`
+
+### Experimental Components
+- `src/components/AppShellExperiment.tsx` — theme-aware shell with inline theme switcher
+- `src/components/ProtectedRouteExperiment.tsx` — auth gate
+- `src/pages/DashboardExperimentPage.tsx` — premium dashboard
+
+---
+
+## REMAINING WORK (Session 3 continuation)
+
+### IN PROGRESS — Dashboard Redesign
+- [ ] Add theme switcher to existing Settings page
+- [ ] Make experimental dashboard the default (`/dashboard`)
+- [ ] Remove old `DashboardPage.tsx` and `AppShell.tsx`
+- [ ] Update all other pages to use theme tokens (Students, Attendance, Assignments, Notices, Analytics, Reports, Settings)
+- [ ] Update all pages to use `bg-[var(--theme-bg)]` instead of hardcoded `bg-[#0b0f14]`
+
+### PENDING — Theme-Aware Pages
+Each existing page needs theme token updates:
+- `StudentsPage.tsx` — hardcoded `bg-[#0b0f14]` and `border-white/10`
+- `AttendancePage.tsx` — same
+- `AssignmentsPage.tsx` — same
+- `NoticesPage.tsx` — same
+- `AnalyticsPage.tsx` — same
+- `ReportsPage.tsx` — same
+- `SettingsPage.tsx` — same + add theme switcher section
+- `AppShell.tsx` — replace with `AppShellExperiment.tsx` or make theme-aware
+
+### PENDING — Settings Theme Switcher
+- Add Appearance section to Settings page with Dark/Light/Glass radio buttons
+- Should call `useTheme().setTheme()`
+
+### PENDING — Other UI Improvements per Design System
+- Component consistency across all pages
+- Framer Motion entrance animations on all pages
+- Responsive design audit (1440+, 1280, 1024, 768, 390)
+- Interaction states (hover, focus, active, disabled, loading)
+
+### P0 — Still Open
+- ML Integration (placeholder functions to replace)
+- Notification Delivery
+- Report Export
+
+---
+
+## ENVIRONMENT
+
+- **Dev servers:** `npm run dev` (API :4000, Web :5173)
+- **Database:** SQLite at `apps/api/prisma/dev.db`
+- **Admin:** `admin@eduflow.local` / `rBn5u+3h0/ZfNc9d`
+- **Tests:** `npm test` (unit), `npx playwright test` (browser)
+- **Coverage:** `npm run test:coverage -w apps/api`
+- **Experimental dashboard:** http://localhost:5173/dashboard-experiment
+
+---
+
+## TO CONTINUE
+
+Say "continue" and the agent will pick up from "REMAINING WORK" above. The project memory is at `.agent/` directory. The design system is at `.superdesign/design-system.md`.
+
+Key context for the next session:
+1. Theme system is built and working — Dark/Light/Glass with CSS variables
+2. Experimental dashboard exists at `/dashboard-experiment` with theme switcher in sidebar
+3. Next step: make experimental dashboard default, update all pages to theme tokens
+4. Master design spec is at `.superdesign/design-system.md` — READ IT FIRST
