@@ -1,0 +1,183 @@
+// Prisma schema — single source of truth for the EduFlow database.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  FACULTY
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(FACULTY)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  students Student[]
+
+  @@map("users")
+}
+
+enum FaceStatus {
+  NOT_REGISTERED
+  REGISTERED
+}
+
+model Student {
+  id            String      @id @default(cuid())
+  studentId     String      @unique
+  rollNumber    String
+  name          String
+  email         String      @unique
+  class         String
+  division      String
+  semester      String
+  department    String
+  profilePhoto  String?
+  faceStatus    FaceStatus  @default(NOT_REGISTERED)
+  facultyId     String      @default("")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  faculty            User                @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  faceProfile        FaceProfile?
+  attendanceRecords  AttendanceRecord[]
+
+  @@index([class, division])
+  @@index([faceStatus])
+  @@index([facultyId])
+  @@map("students")
+}
+
+model FaceProfile {
+  id           String   @id @default(cuid())
+  studentId    String   @unique
+  embedding    String   // JSON-serialized embedding vector
+  modelVersion String   // Track which model generated this embedding
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("face_profiles")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+}
+
+enum SessionStatus {
+  DRAFT
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model AttendanceSession {
+  id             String        @id @default(cuid())
+  facultyId      String
+  classId        String
+  division       String
+  date           DateTime
+  imageReference String?
+  status         SessionStatus @default(DRAFT)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  records        AttendanceRecord[]
+
+  @@index([facultyId])
+  @@index([classId, division, date])
+  @@index([date])
+  @@map("attendance_sessions")
+}
+
+model AttendanceRecord {
+  id         String           @id @default(cuid())
+  sessionId  String
+  studentId  String
+  status     AttendanceStatus @default(PRESENT)
+  confidence Float?
+  markedAt   DateTime         @default(now())
+
+  session    AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student    Student           @relation(fields: [studentId], references: [id])
+
+  @@unique([sessionId, studentId])
+  @@index([studentId])
+  @@index([sessionId])
+  @@map("attendance_records")
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  classId     String
+  division    String
+  facultyId   String
+  deadline    DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([facultyId])
+  @@index([classId, division])
+  @@index([deadline])
+  @@map("assignments")
+}
+
+model Notice {
+  id          String    @id @default(cuid())
+  title       String
+  content     String
+  facultyId   String
+  targetClass String?
+  targetDiv   String?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([facultyId])
+  @@index([publishedAt])
+  @@map("notices")
+}
+
+enum NotificationType {
+  ABSENCE
+  ASSIGNMENT
+  NOTICE
+  GENERAL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model Notification {
+  id         String             @id @default(cuid())
+  type       NotificationType
+  title      String
+  message    String
+  recipient  String
+  status     NotificationStatus @default(PENDING)
+  sentAt     DateTime?
+  createdAt  DateTime           @default(now())
+
+  @@index([status])
+  @@index([recipient])
+  @@map("notifications")
+}
