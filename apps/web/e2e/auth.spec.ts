@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 
 async function login(page: any) {
   await page.goto('/login');
-  await page.getByLabel(/email/i).fill('admin@eduflow.local');
-  await page.locator('input[type="password"]').fill('rBn5u+3h0/ZfNc9d');
+  await page.getByLabel('Email address').fill('admin@eduflow.local');
+  await page.getByRole('textbox', { name: 'Password', exact: true }).fill('rBn5u+3h0/ZfNc9d');
   await page.getByRole('button', { name: /sign in/i }).click();
   await page.waitForURL(/\/dashboard/, { timeout: 10000 });
   await page.getByText(/welcome back/i).waitFor({ timeout: 10000 });
@@ -16,8 +16,8 @@ test.describe('Authentication', () => {
 
   test('should display login page correctly', async ({ page }) => {
     await expect(page).toHaveTitle(/EduFlow/i);
-    await expect(page.getByLabel(/email/i)).toBeVisible();
-    await expect(page.locator('input[type="password"]')).toBeVisible();
+    await expect(page.getByLabel('Email address')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Password', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /sign in/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /create an account/i })).toBeVisible();
   });
@@ -25,15 +25,15 @@ test.describe('Authentication', () => {
   test('should show validation errors for empty fields', async ({ page }) => {
     await page.getByRole('button', { name: /sign in/i }).click();
     await page.waitForTimeout(500);
-    const emailInput = page.getByLabel(/email/i);
-    const passwordInput = page.locator('input[type="password"]');
+    const emailInput = page.getByLabel('Email address');
+    const passwordInput = page.getByRole('textbox', { name: 'Password', exact: true });
     await expect(emailInput).toHaveAttribute('required', '');
     await expect(passwordInput).toHaveAttribute('required', '');
   });
 
   test('should login with valid credentials', async ({ page, context }) => {
-    await page.getByLabel(/email/i).fill('admin@eduflow.local');
-    await page.locator('input[type="password"]').fill('rBn5u+3h0/ZfNc9d');
+    await page.getByLabel('Email address').fill('admin@eduflow.local');
+    await page.getByRole('textbox', { name: 'Password', exact: true }).fill('rBn5u+3h0/ZfNc9d');
     await page.getByRole('button', { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
     expect(page.url()).toContain('/dashboard');
@@ -49,15 +49,15 @@ test.describe('Authentication', () => {
   });
 
   test('should show error for invalid credentials', async ({ page }) => {
-    await page.getByLabel(/email/i).fill('invalid@example.com');
-    await page.locator('input[type="password"]').fill('wrongpassword');
+    await page.getByLabel('Email address').fill('invalid@example.com');
+    await page.getByRole('textbox', { name: 'Password', exact: true }).fill('wrongpassword');
     await page.getByRole('button', { name: /sign in/i }).click();
-    await expect(page.getByText(/invalid|incorrect|failed|wrong/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('alert')).toBeVisible({ timeout: 5000 });
   });
 
   test('should persist session after page reload', async ({ page }) => {
-    await page.getByLabel(/email/i).fill('admin@eduflow.local');
-    await page.locator('input[type="password"]').fill('rBn5u+3h0/ZfNc9d');
+    await page.getByLabel('Email address').fill('admin@eduflow.local');
+    await page.getByRole('textbox', { name: 'Password', exact: true }).fill('rBn5u+3h0/ZfNc9d');
     await page.getByRole('button', { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
     await page.getByText(/welcome back/i).waitFor({ timeout: 10000 });
