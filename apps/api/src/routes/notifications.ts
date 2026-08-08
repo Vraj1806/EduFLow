@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
+import { parsePagination, paginationMeta } from '../lib/pagination.js';
 import * as notificationService from '../services/notification.service.js';
 
 const router = Router();
@@ -13,9 +14,13 @@ const createNotificationSchema = z.object({
 });
 
 router.get('/', async (req, res) => {
-  const notifications = await notificationService.getNotifications(req.user!.id);
+  const pagination = parsePagination(req.query as Record<string, unknown>);
+  const { notifications, total } = await notificationService.getNotifications(req.user!.id, pagination);
   const pending = await notificationService.getPendingCount(req.user!.id);
-  res.json({ data: { notifications, pending } });
+  res.json({
+    data: { notifications, pending },
+    meta: paginationMeta(pagination.page, pagination.pageSize, total),
+  });
 });
 
 router.post('/', async (req, res) => {

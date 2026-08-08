@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+.venv/
 
 # Build output
 dist/
@@ -20,6 +21,9 @@ coverage/
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Locally-stored profile photos (STORAGE_PROVIDER=local)
+uploads/
 
 # Logs
 logs/

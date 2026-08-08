@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import type { CreateStudentInput } from '@eduflow/shared';
 import * as studentApi from '../api/students.ts';
+import { PageWrapper } from '../components/PageWrapper.tsx';
 
 export function AddStudentPage() {
   const navigate = useNavigate();
@@ -40,11 +41,11 @@ export function AddStudentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0f14] px-6 py-10 text-white">
+    <PageWrapper className="min-h-screen bg-[var(--theme-bg)] px-6 py-10 text-[var(--theme-fg)]">
       {/* Back button */}
       <button
         onClick={() => navigate('/dashboard/students')}
-        className="mb-6 flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+        className="mb-6 flex items-center gap-2 text-sm text-[var(--theme-muted)] transition-colors hover:text-[var(--theme-fg)]"
       >
         <ArrowLeft size={16} />
         Back to Students
@@ -55,26 +56,26 @@ export function AddStudentPage() {
         <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
           Add Student
         </h1>
-        <p className="mt-2 text-sm text-gray-400">
+        <p className="mt-2 text-sm text-[var(--theme-muted)]">
           Create a new student profile
         </p>
       </div>
 
       {/* Form */}
       <div className="mx-auto max-w-2xl">
-        <div className="rounded-lg border border-white/10 bg-white/5 p-6">
+        <div className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-6">
           {error && (
-            <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
-              <AlertCircle className="mt-0.5 shrink-0 text-red-400" size={18} />
-              <div className="text-sm text-red-300">{error}</div>
+            <div className="mb-6 flex items-start gap-3 rounded-lg border border-[var(--theme-danger)]/20 bg-[var(--theme-danger)]/10 p-4">
+              <AlertCircle className="mt-0.5 shrink-0 text-[var(--theme-danger)]" size={18} />
+              <div className="text-sm text-[var(--theme-danger)]">{error}</div>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Student ID */}
             <div>
-              <label htmlFor="studentId" className="block text-sm font-medium text-gray-300">
-                Student ID <span className="text-red-400">*</span>
+              <label htmlFor="studentId" className="block text-sm font-medium text-[var(--theme-fg)]">
+                Student ID <span className="text-[var(--theme-danger)]">*</span>
               </label>
               <input
                 id="studentId"
@@ -82,15 +83,15 @@ export function AddStudentPage() {
                 required
                 value={formData.studentId}
                 onChange={(e) => handleChange('studentId', e.target.value)}
-                className="mt-1.5 h-11 w-full rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white placeholder-gray-500 transition-all focus:border-[#FF7A3D]/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#FF7A3D]/20"
+                className="mt-1.5 h-11 w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 text-sm text-[var(--theme-fg)] placeholder:text-[var(--theme-muted)] transition-all focus:border-[var(--theme-primary)]/50 focus:bg-[var(--theme-surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20"
                 placeholder="e.g., STU001"
               />
             </div>
 
             {/* Name */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-300">
-                Full Name <span className="text-red-400">*</span>
+              <label htmlFor="name" className="block text-sm font-medium text-[var(--theme-fg)]">
+                Full Name <span className="text-[var(--theme-danger)]">*</span>
               </label>
               <input
                 id="name"
@@ -98,15 +99,15 @@ export function AddStudentPage() {
                 required
                 value={formData.name}
                 onChange={(e) => handleChange('name', e.target.value)}
-                className="mt-1.5 h-11 w-full rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white placeholder-gray-500 transition-all focus:border-[#FF7A3D]/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#FF7A3D]/20"
+                className="mt-1.5 h-11 w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 text-sm text-[var(--theme-fg)] placeholder:text-[var(--theme-muted)] transition-all focus:border-[var(--theme-primary)]/50 focus:bg-[var(--theme-surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20"
                 placeholder="e.g., Rahul Patel"
               />
             </div>
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-                Email <span className="text-red-400">*</span>
+              <label htmlFor="email" className="block text-sm font-medium text-[var(--theme-fg)]">
+                Email <span className="text-[var(--theme-danger)]">*</span>
               </label>
               <input
                 id="email"
@@ -114,15 +115,15 @@ export function AddStudentPage() {
                 required
                 value={formData.email}
                 onChange={(e) => handleChange('email', e.target.value)}
-                className="mt-1.5 h-11 w-full rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white placeholder-gray-500 transition-all focus:border-[#FF7A3D]/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#FF7A3D]/20"
+                className="mt-1.5 h-11 w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 text-sm text-[var(--theme-fg)] placeholder:text-[var(--theme-muted)] transition-all focus:border-[var(--theme-primary)]/50 focus:bg-[var(--theme-surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20"
                 placeholder="e.g., rahul@example.com"
               />
             </div>
 
             {/* Roll Number */}
             <div>
-              <label htmlFor="rollNumber" className="block text-sm font-medium text-gray-300">
-                Roll Number <span className="text-red-400">*</span>
+              <label htmlFor="rollNumber" className="block text-sm font-medium text-[var(--theme-fg)]">
+                Roll Number <span className="text-[var(--theme-danger)]">*</span>
               </label>
               <input
                 id="rollNumber"
@@ -130,7 +131,7 @@ export function AddStudentPage() {
                 required
                 value={formData.rollNumber}
                 onChange={(e) => handleChange('rollNumber', e.target.value)}
-                className="mt-1.5 h-11 w-full rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white placeholder-gray-500 transition-all focus:border-[#FF7A3D]/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#FF7A3D]/20"
+                className="mt-1.5 h-11 w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 text-sm text-[var(--theme-fg)] placeholder:text-[var(--theme-muted)] transition-all focus:border-[var(--theme-primary)]/50 focus:bg-[var(--theme-surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20"
                 placeholder="e.g., CE-001"
               />
             </div>
@@ -138,8 +139,8 @@ export function AddStudentPage() {
             {/* Class and Division */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="class" className="block text-sm font-medium text-gray-300">
-                  Class <span className="text-red-400">*</span>
+                <label htmlFor="class" className="block text-sm font-medium text-[var(--theme-fg)]">
+                  Class <span className="text-[var(--theme-danger)]">*</span>
                 </label>
                 <input
                   id="class"
@@ -147,13 +148,13 @@ export function AddStudentPage() {
                   required
                   value={formData.class}
                   onChange={(e) => handleChange('class', e.target.value)}
-                  className="mt-1.5 h-11 w-full rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white placeholder-gray-500 transition-all focus:border-[#FF7A3D]/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#FF7A3D]/20"
+                  className="mt-1.5 h-11 w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 text-sm text-[var(--theme-fg)] placeholder:text-[var(--theme-muted)] transition-all focus:border-[var(--theme-primary)]/50 focus:bg-[var(--theme-surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20"
                   placeholder="e.g., 6"
                 />
               </div>
               <div>
-                <label htmlFor="division" className="block text-sm font-medium text-gray-300">
-                  Division <span className="text-red-400">*</span>
+                <label htmlFor="division" className="block text-sm font-medium text-[var(--theme-fg)]">
+                  Division <span className="text-[var(--theme-danger)]">*</span>
                 </label>
                 <input
                   id="division"
@@ -161,7 +162,7 @@ export function AddStudentPage() {
                   required
                   value={formData.division}
                   onChange={(e) => handleChange('division', e.target.value)}
-                  className="mt-1.5 h-11 w-full rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white placeholder-gray-500 transition-all focus:border-[#FF7A3D]/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#FF7A3D]/20"
+                  className="mt-1.5 h-11 w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 text-sm text-[var(--theme-fg)] placeholder:text-[var(--theme-muted)] transition-all focus:border-[var(--theme-primary)]/50 focus:bg-[var(--theme-surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20"
                   placeholder="e.g., A"
                 />
               </div>
@@ -169,8 +170,8 @@ export function AddStudentPage() {
 
             {/* Semester */}
             <div>
-              <label htmlFor="semester" className="block text-sm font-medium text-gray-300">
-                Semester <span className="text-red-400">*</span>
+              <label htmlFor="semester" className="block text-sm font-medium text-[var(--theme-fg)]">
+                Semester <span className="text-[var(--theme-danger)]">*</span>
               </label>
               <input
                 id="semester"
@@ -178,15 +179,15 @@ export function AddStudentPage() {
                 required
                 value={formData.semester}
                 onChange={(e) => handleChange('semester', e.target.value)}
-                className="mt-1.5 h-11 w-full rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white placeholder-gray-500 transition-all focus:border-[#FF7A3D]/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#FF7A3D]/20"
+                className="mt-1.5 h-11 w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 text-sm text-[var(--theme-fg)] placeholder:text-[var(--theme-muted)] transition-all focus:border-[var(--theme-primary)]/50 focus:bg-[var(--theme-surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20"
                 placeholder="e.g., 6"
               />
             </div>
 
             {/* Department */}
             <div>
-              <label htmlFor="department" className="block text-sm font-medium text-gray-300">
-                Department <span className="text-red-400">*</span>
+              <label htmlFor="department" className="block text-sm font-medium text-[var(--theme-fg)]">
+                Department <span className="text-[var(--theme-danger)]">*</span>
               </label>
               <input
                 id="department"
@@ -194,7 +195,7 @@ export function AddStudentPage() {
                 required
                 value={formData.department}
                 onChange={(e) => handleChange('department', e.target.value)}
-                className="mt-1.5 h-11 w-full rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white placeholder-gray-500 transition-all focus:border-[#FF7A3D]/50 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#FF7A3D]/20"
+                className="mt-1.5 h-11 w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 text-sm text-[var(--theme-fg)] placeholder:text-[var(--theme-muted)] transition-all focus:border-[var(--theme-primary)]/50 focus:bg-[var(--theme-surface-raised)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/20"
                 placeholder="e.g., Computer Engineering"
               />
             </div>
@@ -205,14 +206,14 @@ export function AddStudentPage() {
                 type="button"
                 onClick={() => navigate('/dashboard/students')}
                 disabled={submitting}
-                className="h-11 flex-1 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-white transition-all hover:bg-white/10 disabled:opacity-50"
+                className="h-11 flex-1 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] text-sm font-medium text-[var(--theme-fg)] transition-all hover:bg-[var(--theme-surface-raised)] disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="h-11 flex-1 rounded-lg bg-[#FF7A3D] text-sm font-semibold text-[#140A08] transition-all hover:bg-[#ff8f5a] disabled:opacity-50"
+                className="h-11 flex-1 rounded-lg bg-[var(--theme-primary)] text-sm font-semibold text-[var(--theme-primary-fg)] transition-all hover:bg-[var(--theme-primary-hover)] disabled:opacity-50"
                 style={{ fontFamily: 'Space Grotesk, sans-serif' }}
               >
                 {submitting ? 'Creating...' : 'Create Student'}
@@ -221,6 +222,6 @@ export function AddStudentPage() {
           </form>
         </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 }

@@ -317,6 +317,15 @@ export interface ReportExportMeta {
   note: string;
 }
 
+// ---- Pagination ----
+
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 // ---- Faculty settings ----
 
 export interface UpdateProfileInput {

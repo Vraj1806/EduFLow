@@ -1,5 +1,6 @@
 import { prisma } from '../db.js';
 import { AppError } from '../middleware/error.js';
+import type { PaginationOptions } from '../lib/pagination.js';
 import { createNotification } from './notification.service.js';
 
 export interface CreateNoticeInput {
@@ -23,11 +24,18 @@ export async function createNotice(input: CreateNoticeInput) {
   });
 }
 
-export async function getNotices(facultyId: string) {
-  return prisma.notice.findMany({
-    where: { facultyId },
-    orderBy: { createdAt: 'desc' },
-  });
+export async function getNotices(facultyId: string, pagination: PaginationOptions) {
+  const where = { facultyId };
+  const [total, notices] = await Promise.all([
+    prisma.notice.count({ where }),
+    prisma.notice.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (pagination.page - 1) * pagination.pageSize,
+      take: pagination.pageSize,
+    }),
+  ]);
+  return { notices, total };
 }
 
 export async function getNoticeById(id: string, facultyId: string) {
@@ -78,14 +86,21 @@ export async function deleteNotice(id: string, facultyId: string) {
   await prisma.notice.delete({ where: { id } });
 }
 
-export async function getPublishedNotices(facultyId: string) {
-  return prisma.notice.findMany({
-    where: {
-      facultyId,
-      publishedAt: {
-        not: null,
-      },
+export async function getPublishedNotices(facultyId: string, pagination: PaginationOptions) {
+  const where = {
+    facultyId,
+    publishedAt: {
+      not: null,
     },
-    orderBy: { publishedAt: 'desc' },
-  });
+  };
+  const [total, notices] = await Promise.all([
+    prisma.notice.count({ where }),
+    prisma.notice.findMany({
+      where,
+      orderBy: { publishedAt: 'desc' },
+      skip: (pagination.page - 1) * pagination.pageSize,
+      take: pagination.pageSize,
+    }),
+  ]);
+  return { notices, total };
 }

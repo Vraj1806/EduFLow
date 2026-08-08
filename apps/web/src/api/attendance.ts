@@ -2,12 +2,19 @@ import type {
   AttendanceSession,
   ClassroomRecognitionResult,
   CreateAttendanceSessionInput,
+  PaginationMeta,
   RecognizedStudentInput,
 } from '@eduflow/shared';
-import { apiFetch } from './client.ts';
+import { apiFetch, apiFetchWithMeta } from './client.ts';
 
-export async function getSessions(): Promise<{ sessions: AttendanceSession[] }> {
-  return apiFetch('/attendance/sessions');
+export async function getSessions(
+  page = 1,
+  pageSize = 25,
+): Promise<{ sessions: AttendanceSession[]; meta: PaginationMeta }> {
+  const { data, meta } = await apiFetchWithMeta<{ sessions: AttendanceSession[] }>(
+    `/attendance/sessions?page=${page}&pageSize=${pageSize}`,
+  );
+  return { sessions: data.sessions, meta };
 }
 
 export async function getSessionById(id: string): Promise<{ session: AttendanceSession }> {

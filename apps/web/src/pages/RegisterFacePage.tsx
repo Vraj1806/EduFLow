@@ -4,6 +4,7 @@ import { ArrowLeft, Camera, Upload, CheckCircle, XCircle, AlertCircle } from 'lu
 import type { Student } from '@eduflow/shared';
 import * as studentApi from '../api/students.ts';
 import * as faceApi from '../api/face.ts';
+import { PageWrapper } from '../components/PageWrapper.tsx';
 
 export function RegisterFacePage() {
   const { id } = useParams<{ id: string }>();
@@ -134,20 +135,20 @@ export function RegisterFacePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0b0f14]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#FF7A3D]/20 border-t-[#FF7A3D]" />
+      <div className="flex min-h-screen items-center justify-center bg-[var(--theme-bg)]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--theme-primary)]/20 border-t-[var(--theme-primary)]" />
       </div>
     );
   }
 
   if (!student) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0b0f14] px-6 text-white">
-        <AlertCircle className="mb-4 text-red-400" size={48} />
-        <p className="text-lg text-gray-400">Student not found</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--theme-bg)] px-6 text-[var(--theme-fg)]">
+        <AlertCircle className="mb-4 text-[var(--theme-danger)]" size={48} />
+        <p className="text-lg text-[var(--theme-muted)]">Student not found</p>
         <button
           onClick={() => navigate('/dashboard/students')}
-          className="mt-4 text-sm text-[#FF7A3D] hover:text-[#ff8f5a]"
+          className="mt-4 text-sm text-[var(--theme-primary)] hover:text-[var(--theme-primary-hover)]"
         >
           Back to Students
         </button>
@@ -156,11 +157,11 @@ export function RegisterFacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0f14] px-6 py-10 text-white">
+    <PageWrapper className="min-h-screen bg-[var(--theme-bg)] px-6 py-10 text-[var(--theme-fg)]">
       {/* Back button */}
       <button
         onClick={() => navigate(`/dashboard/students/${id}`)}
-        className="mb-6 flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+        className="mb-6 flex items-center gap-2 text-sm text-[var(--theme-muted)] transition-colors hover:text-[var(--theme-fg)]"
       >
         <ArrowLeft size={16} />
         Back to Profile
@@ -172,35 +173,35 @@ export function RegisterFacePage() {
           <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
             Register Face
           </h1>
-          <p className="mt-2 text-sm text-gray-400">
+          <p className="mt-2 text-sm text-[var(--theme-muted)]">
             {student.name} • {student.class} {student.division}
           </p>
         </div>
 
         {/* Success Message */}
         {success && (
-          <div className="mb-6 flex items-center gap-3 rounded-lg border border-green-500/20 bg-green-500/10 p-4">
-            <CheckCircle className="text-green-400" size={24} />
-            <div className="text-green-400">Face registered successfully! Redirecting...</div>
+          <div className="mb-6 flex items-center gap-3 rounded-lg border border-[var(--theme-success)]/20 bg-[var(--theme-success)]/10 p-4">
+            <CheckCircle className="text-[var(--theme-success)]" size={24} />
+            <div className="text-[var(--theme-success)]">Face registered successfully! Redirecting...</div>
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
-            <XCircle className="mt-0.5 shrink-0 text-red-400" size={20} />
-            <div className="text-sm text-red-300">{error}</div>
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-[var(--theme-danger)]/20 bg-[var(--theme-danger)]/10 p-4">
+            <XCircle className="mt-0.5 shrink-0 text-[var(--theme-danger)]" size={20} />
+            <div className="text-sm text-[var(--theme-danger)]">{error}</div>
           </div>
         )}
 
         {/* Main Card */}
-        <div className="rounded-lg border border-white/10 bg-white/5 p-6">
+        <div className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-6">
           {!capturedImage ? (
             <>
               {/* Instructions */}
-              <div className="mb-6 rounded-lg bg-white/5 p-4">
-                <h3 className="mb-2 text-sm font-semibold text-[#FF7A3D]">Instructions</h3>
-                <ul className="space-y-1 text-sm text-gray-400">
+              <div className="mb-6 rounded-lg bg-[var(--theme-surface)] p-4">
+                <h3 className="mb-2 text-sm font-semibold text-[var(--theme-primary)]">Instructions</h3>
+                <ul className="space-y-1 text-sm text-[var(--theme-muted)]">
                   <li>• Position the student's face inside the frame</li>
                   <li>• Ensure good lighting and clear visibility</li>
                   <li>• Only one person should be visible</li>
@@ -221,14 +222,14 @@ export function RegisterFacePage() {
                       style={{ transform: 'scaleX(-1)' }}
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="h-64 w-64 rounded-full border-4 border-[#FF7A3D]/50" />
+                      <div className="h-64 w-64 rounded-full border-4 border-[var(--theme-primary)]/50" />
                     </div>
                   </div>
 
                   <div className="mt-4 flex gap-3">
                     <button
                       onClick={captureImage}
-                      className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[#FF7A3D] text-sm font-semibold text-[#140A08] transition-all hover:bg-[#ff8f5a]"
+                      className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--theme-primary)] text-sm font-semibold text-[var(--theme-primary-fg)] transition-all hover:bg-[var(--theme-primary-hover)]"
                       style={{ fontFamily: 'Space Grotesk, sans-serif' }}
                     >
                       <Camera size={18} />
@@ -236,7 +237,7 @@ export function RegisterFacePage() {
                     </button>
                     <button
                       onClick={stopCamera}
-                      className="flex h-11 items-center justify-center rounded-lg border border-white/10 bg-white/5 px-6 text-sm font-medium text-white transition-all hover:bg-white/10"
+                      className="flex h-11 items-center justify-center rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-6 text-sm font-medium text-[var(--theme-fg)] transition-all hover:bg-[var(--theme-surface-raised)]"
                     >
                       Cancel
                     </button>
@@ -246,7 +247,7 @@ export function RegisterFacePage() {
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button
                     onClick={startCamera}
-                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[#FF7A3D] text-sm font-semibold text-[#140A08] transition-all hover:bg-[#ff8f5a]"
+                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--theme-primary)] text-sm font-semibold text-[var(--theme-primary-fg)] transition-all hover:bg-[var(--theme-primary-hover)]"
                     style={{ fontFamily: 'Space Grotesk, sans-serif' }}
                   >
                     <Camera size={18} />
@@ -254,7 +255,7 @@ export function RegisterFacePage() {
                   </button>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-white transition-all hover:bg-white/10"
+                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] text-sm font-medium text-[var(--theme-fg)] transition-all hover:bg-[var(--theme-surface-raised)]"
                   >
                     <Upload size={18} />
                     Upload Image
@@ -283,19 +284,19 @@ export function RegisterFacePage() {
                 <button
                   onClick={handleRetake}
                   disabled={registering}
-                  className="flex h-11 flex-1 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-white transition-all hover:bg-white/10 disabled:opacity-50"
+                  className="flex h-11 flex-1 items-center justify-center rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] text-sm font-medium text-[var(--theme-fg)] transition-all hover:bg-[var(--theme-surface-raised)] disabled:opacity-50"
                 >
                   Retake
                 </button>
                 <button
                   onClick={handleRegisterFace}
                   disabled={registering}
-                  className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[#FF7A3D] text-sm font-semibold text-[#140A08] transition-all hover:bg-[#ff8f5a] disabled:opacity-50"
+                  className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--theme-primary)] text-sm font-semibold text-[var(--theme-primary-fg)] transition-all hover:bg-[var(--theme-primary-hover)] disabled:opacity-50"
                   style={{ fontFamily: 'Space Grotesk, sans-serif' }}
                 >
                   {registering ? (
                     <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#140A08]/30 border-t-[#140A08]" />
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--theme-fg)]/30 border-t-[var(--theme-fg)]" />
                       Registering...
                     </>
                   ) : (
@@ -310,6 +311,6 @@ export function RegisterFacePage() {
 
       {/* Hidden canvas for image capture */}
       <canvas ref={canvasRef} className="hidden" />
-    </div>
+    </PageWrapper>
   );
 }

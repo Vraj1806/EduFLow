@@ -7,11 +7,14 @@ import { AppError } from '../middleware/error.js';
 export interface DecodedToken {
   sub: string;
   role: Role;
+  /** Unique token id — persisted in the RefreshToken table for revocation. */
+  jti: string;
 }
 
 interface TokenPayload extends jwt.JwtPayload {
   type: 'access' | 'refresh';
   role: Role;
+  jti?: string;
 }
 
 export function signAccessToken(userId: string, role: Role): string {
@@ -24,11 +27,29 @@ export function signAccessToken(userId: string, role: Role): string {
   });
 }
 
-export function signRefreshToken(userId: string, role: Role): string {
+export function signRefreshToken(
+  userId: string,
+  role: Role,
+): { token: string; jti: string } {
+  const jti = randomUUID();
   const { REFRESH_TOKEN_SECRET, REFRESH_TOKEN_TTL } = getConfig();
-  return jwt.sign({ type: 'refresh', role, sub: userId, jti: randomUUID() }, REFRESH_TOKEN_SECRET, {
+  const token = jwt.sign({ type: 'refresh', role, sub: userId, jti }, REFRESH_TOKEN_SECRET, {
     expiresIn: REFRESH_TOKEN_TTL as jwt.SignOptions['expiresIn'],
   });
+  return { token, jti };
+}
+
+/**
+ * Read the `jti` and expiry back out of a just-issued refresh token (unverified
+ * decode — the token was signed milliseconds ago by `signRefreshToken`). Used
+ * to persist the DB row that backs server-side revocation.
+ */
+export function decodeRefreshToken(token: string): { jti: string; expiresAt: Date } {
+  const payload = jwt.decode(token) as jwt.JwtPayload | null;
+  if (!payload || typeof payload.jti !== 'string' || typeof payload.exp !== 'number') {
+    throw new AppError(401, 'INVALID_TOKEN', 'Session is invalid or has expired');
+  }
+  return { jti: payload.jti, expiresAt: new Date(payload.exp * 1000) };
 }
 
 export function verifyAccessToken(token: string): DecodedToken {
@@ -52,5 +73,10 @@ function verifyToken(token: string, expectedType: 'access' | 'refresh', secret: 
   if (payload.type !== expectedType || typeof sub !== 'string' || !validRole) {
     throw new AppError(401, 'INVALID_TOKEN', 'Session is invalid or has expired');
   }
-  return { sub, role };
+  // Refresh tokens must carry a jti so they can be revoked server-side; access
+  // tokens are stateless and never include one.
+  if (expectedType === 'refresh' && typeof payload.jti !== 'string') {
+    throw new AppError(401, 'INVALID_TOKEN', 'Session is invalid or has expired');
+  }
+  return { sub, role, jti: payload.jti ?? '' };
 }

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
+import { parsePagination, paginationMeta } from '../lib/pagination.js';
 import * as attendanceService from '../services/attendance.service.js';
 import * as classroomService from '../services/classroom.service.js';
 
@@ -43,8 +44,12 @@ router.post('/sessions', async (req, res) => {
 
 // GET /attendance/sessions - Get all sessions for faculty
 router.get('/sessions', async (req, res) => {
-  const sessions = await attendanceService.getAttendanceSessions(req.user!.id);
-  res.json({ data: { sessions } });
+  const pagination = parsePagination(req.query as Record<string, unknown>);
+  const { sessions, total } = await attendanceService.getAttendanceSessions(req.user!.id, pagination);
+  res.json({
+    data: { sessions },
+    meta: paginationMeta(pagination.page, pagination.pageSize, total),
+  });
 });
 
 // GET /attendance/sessions/:id - Get specific session

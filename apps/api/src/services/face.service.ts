@@ -1,15 +1,14 @@
 import { prisma } from '../db.js';
 import { AppError } from '../middleware/error.js';
+import { invalidateEmbeddingCache } from './embeddingCache.js';
+import * as mlClient from './ml.client.js';
 
 /**
  * Face Recognition Service
  *
- * This service provides an abstraction layer for face detection and recognition.
- * Currently, it defines the interface that will be implemented when the actual
- * ML model (Python FastAPI service or similar) is integrated in a future phase.
- *
- * For now, this service handles face profile storage and management, with
- * placeholder methods for the ML operations that will be connected later.
+ * Abstraction layer for face detection and recognition. Detection and embedding
+ * operations are delegated to the ML sidecar via `ml.client.ts`; this service
+ * owns face profile storage and management.
  */
 
 export interface FaceDetectionResult {
@@ -32,61 +31,45 @@ export interface FaceEmbedding {
 /**
  * Detect faces in an image.
  *
- * TODO: This will be connected to the actual ML model in Phase 3+.
- * For now, this is a service abstraction that validates the integration point.
+ * Delegates to the ML sidecar. Returns `detected:false` when no face is found
+ * (not an error) so callers can branch on the result.
  */
 export async function detectFaces(imageBase64: string): Promise<FaceDetectionResult> {
-  // Placeholder: In production, this would call the Python FastAPI face detection service
-  // or use a Node.js-compatible face detection library.
+  validateImageForRegistration(imageBase64);
 
-  // Basic validation
-  if (!imageBase64 || imageBase64.length === 0) {
-    throw new AppError(400, 'INVALID_IMAGE', 'Image data is required');
-  }
-
-  // Simulate face detection response
-  // In production, replace this with actual ML model call:
-  // const response = await fetch(`${FACE_SERVICE_URL}/detect`, { ... });
-
+  const result = await mlClient.detect(imageBase64);
   return {
-    detected: true,
-    faceCount: 1,
-    confidence: 0.95,
-    boundingBox: { x: 100, y: 100, width: 200, height: 200 },
+    detected: result.detected,
+    faceCount: result.faceCount,
+    confidence: result.confidence,
+    boundingBox: result.boundingBox,
   };
 }
 
 /**
- * Generate face embedding from image.
+ * Generate a face embedding from an image containing exactly one face.
  *
- * TODO: This will be connected to the actual ML model in Phase 3+.
- * For now, this is a service abstraction that validates the integration point.
+ * The ML sidecar rejects no-face images with 400 and multi-face images with
+ * 422; those are translated into the domain error codes below.
  */
 export async function generateEmbedding(imageBase64: string): Promise<FaceEmbedding> {
-  // First, detect faces
-  const detection = await detectFaces(imageBase64);
+  validateImageForRegistration(imageBase64);
 
-  if (!detection.detected) {
-    throw new AppError(400, 'NO_FACE_DETECTED', 'No face detected in the image');
+  try {
+    const result = await mlClient.embed(imageBase64);
+    return {
+      vector: result.embedding,
+      modelVersion: result.modelVersion,
+    };
+  } catch (err) {
+    if (err instanceof AppError && err.statusCode === 400) {
+      throw new AppError(400, 'NO_FACE_DETECTED', 'No face detected in the image');
+    }
+    if (err instanceof AppError && err.statusCode === 422) {
+      throw new AppError(422, 'MULTIPLE_FACES', 'Please ensure only one person is visible in the image');
+    }
+    throw err;
   }
-
-  if (detection.faceCount > 1) {
-    throw new AppError(400, 'MULTIPLE_FACES', 'Please ensure only one person is visible in the image');
-  }
-
-  // Placeholder: In production, this would call the Python FastAPI embedding service
-  // or use a Node.js-compatible face recognition library (e.g., face-api.js).
-
-  // Generate a placeholder embedding (128-dimensional vector)
-  // In production, replace this with actual ML model call:
-  // const response = await fetch(`${FACE_SERVICE_URL}/embed`, { ... });
-
-  const placeholderVector = Array.from({ length: 128 }, () => Math.random());
-
-  return {
-    vector: placeholderVector,
-    modelVersion: 'placeholder-v1.0',
-  };
 }
 
 /**
@@ -148,6 +131,9 @@ export async function registerFaceProfile(studentId: string, imageBase64: string
     data: { faceStatus: 'REGISTERED' },
   });
 
+  // Evict stale cached embeddings so the next recognition uses the fresh vector.
+  invalidateEmbeddingCache(facultyId, student.class, student.division);
+
   return {
     id: faceProfile.id,
     studentId: faceProfile.studentId,
@@ -200,4 +186,7 @@ export async function deleteFaceProfile(studentId: string, facultyId: string) {
     where: { id: studentId },
     data: { faceStatus: 'NOT_REGISTERED' },
   });
+
+  // Evict stale cached embeddings so a removed face is not still matched.
+  invalidateEmbeddingCache(facultyId, student.class, student.division);
 }

@@ -11,9 +11,10 @@ import {
   UserCheck,
   UserX,
 } from 'lucide-react';
-import type { AttendanceSession, ClassroomRecognitionResult, RecognizedStudent } from '@eduflow/shared';
+import type { AttendanceSession, ClassroomRecognitionResult, PaginationMeta, RecognizedStudent } from '@eduflow/shared';
 import * as attendanceApi from '../api/attendance.ts';
 import { ErrorBanner, PageHeader, Spinner, StatusBadge, buttonPrimary, buttonSecondary, inputClass } from '../components/ui.tsx';
+import { PageWrapper } from '../components/PageWrapper.tsx';
 
 function sessionTone(status: AttendanceSession['status']): 'gray' | 'amber' | 'green' | 'red' {
   if (status === 'COMPLETED') return 'green';
@@ -39,18 +40,22 @@ export function AttendancePage() {
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sessionsPage, setSessionsPage] = useState(1);
+  const [sessionsMeta, setSessionsMeta] = useState<PaginationMeta>({ page: 1, pageSize: 25, total: 0, totalPages: 0 });
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
 
-  const loadSessions = useCallback(async () => {
+  const loadSessions = useCallback(async (page = 1) => {
     try {
       setSessionsLoading(true);
       setSessionsError(null);
-      const data = await attendanceApi.getSessions();
+      const data = await attendanceApi.getSessions(page);
       setSessions(data.sessions);
+      setSessionsMeta(data.meta);
+      setSessionsPage(page);
     } catch (err) {
       setSessionsError(err instanceof Error ? err.message : 'Failed to load sessions');
     } finally {
@@ -59,7 +64,7 @@ export function AttendancePage() {
   }, []);
 
   useEffect(() => {
-    loadSessions();
+    loadSessions(1);
     return () => {
       stopCamera();
     };
@@ -200,7 +205,7 @@ export function AttendancePage() {
       setResult(null);
       setImageData(null);
       setSelected(new Set());
-      loadSessions();
+      loadSessions(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to confirm attendance');
     } finally {
@@ -217,19 +222,19 @@ export function AttendancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0f14] px-6 py-10 text-white">
+    <PageWrapper className="min-h-screen bg-[var(--theme-bg)] px-6 py-10 text-[var(--theme-fg)]">
       <PageHeader title="Attendance" subtitle="Upload a classroom photo, review recognized students, and confirm attendance" />
 
       {error && <ErrorBanner message={error} />}
       {success && (
-        <div className="mb-6 flex items-center gap-3 rounded-lg border border-green-500/20 bg-green-500/10 p-4">
-          <CheckCircle className="shrink-0 text-green-400" size={18} />
-          <div className="text-sm text-green-300">{success}</div>
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-[var(--theme-success)]/20 bg-[var(--theme-success)]/10 p-4">
+          <CheckCircle className="shrink-0 text-[var(--theme-success)]" size={18} />
+          <div className="text-sm text-[var(--theme-success)]">{success}</div>
         </div>
       )}
 
       {/* New Session */}
-      <div className="mb-8 rounded-lg border border-white/10 bg-white/5 p-6">
+      <div className="mb-8 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-6">
         <h2 className="mb-4 text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
           New Attendance Session
         </h2>
@@ -243,7 +248,7 @@ export function AttendancePage() {
         >
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <label htmlFor="classId" className="mb-1.5 block text-sm font-medium text-gray-300">
+              <label htmlFor="classId" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
                 Class
               </label>
               <input
@@ -257,7 +262,7 @@ export function AttendancePage() {
               />
             </div>
             <div>
-              <label htmlFor="division" className="mb-1.5 block text-sm font-medium text-gray-300">
+              <label htmlFor="division" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
                 Division
               </label>
               <input
@@ -271,7 +276,7 @@ export function AttendancePage() {
               />
             </div>
             <div>
-              <label htmlFor="date" className="mb-1.5 block text-sm font-medium text-gray-300">
+              <label htmlFor="date" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
                 Date
               </label>
               <input
@@ -289,23 +294,23 @@ export function AttendancePage() {
           {!imageData ? (
             <div className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center transition-all hover:border-[#FF7A3D]/40">
-                  <ImageIcon className="text-gray-500" size={28} />
-                  <span className="text-sm text-gray-400">Upload a photo</span>
-                  <span className="text-xs text-gray-600">PNG / JPG / WebP</span>
+                <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-[var(--theme-border)] bg-[var(--theme-surface)] px-6 py-10 text-center transition-all hover:border-[var(--theme-primary)]/40">
+                  <ImageIcon className="text-[var(--theme-muted)]" size={28} />
+                  <span className="text-sm text-[var(--theme-muted)]">Upload a photo</span>
+                  <span className="text-xs text-[var(--theme-muted)]">PNG / JPG / WebP</span>
                   <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleImageUpload} className="hidden" />
                 </label>
                 <button
                   type="button"
                   onClick={startCamera}
-                  className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center transition-all hover:border-[#FF7A3D]/40 hover:bg-[#FF7A3D]/5"
+                  className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-[var(--theme-border)] bg-[var(--theme-surface)] px-6 py-10 text-center transition-all hover:border-[var(--theme-primary)]/40 hover:bg-[var(--theme-primary)]/5"
                 >
-                  <Video className="text-[#FF7A3D]" size={28} />
-                  <span className="text-sm text-gray-400">Take live photo</span>
-                  <span className="text-xs text-gray-600">Opens your camera</span>
+                  <Video className="text-[var(--theme-primary)]" size={28} />
+                  <span className="text-sm text-[var(--theme-muted)]">Take live photo</span>
+                  <span className="text-xs text-[var(--theme-muted)]">Opens your camera</span>
                 </button>
               </div>
-              <p className="text-center text-xs text-gray-600">The photo is used only to detect and match registered student faces</p>
+              <p className="text-center text-xs text-[var(--theme-muted)]">The photo is used only to detect and match registered student faces</p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
@@ -313,7 +318,7 @@ export function AttendancePage() {
                 <img src={imageData} alt="Classroom photo" className="max-h-72 w-full object-contain" />
               </div>
               <div className="flex flex-row gap-3 sm:flex-col">
-                <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-300 transition-all hover:bg-white/10 sm:flex-none">
+                <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 py-3 text-sm text-[var(--theme-fg)] transition-all hover:bg-[var(--theme-surface-raised)] sm:flex-none">
                   <Camera size={16} />
                   Change
                   <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleImageUpload} className="hidden" />
@@ -324,7 +329,7 @@ export function AttendancePage() {
                     setImageData(null);
                     setResult(null);
                   }}
-                  className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-300 transition-all hover:bg-white/10 sm:flex-none"
+                  className="flex-1 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-4 py-3 text-sm text-[var(--theme-fg)] transition-all hover:bg-[var(--theme-surface-raised)] sm:flex-none"
                 >
                   Remove
                 </button>
@@ -340,7 +345,7 @@ export function AttendancePage() {
           >
             {recognizing ? (
               <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#140A08]/30 border-t-[#140A08]" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--theme-fg)]/30 border-t-[var(--theme-fg)]" />
                 Processing…
               </>
             ) : (
@@ -351,7 +356,7 @@ export function AttendancePage() {
 
         {/* Recognition Review */}
         {result && (
-          <div className="mt-6 border-t border-white/10 pt-6">
+          <div className="mt-6 border-t border-[var(--theme-border)] pt-6">
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
                 Review Recognized Students
@@ -362,42 +367,42 @@ export function AttendancePage() {
             </div>
 
             {result.recognizedStudents.length === 0 ? (
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-[var(--theme-muted)]">
                 No registered student was recognized in this photo. Check that the students have registered faces, then try again.
               </p>
             ) : (
-              <div className="overflow-hidden rounded-lg border border-white/10">
+              <div className="overflow-hidden rounded-lg border border-[var(--theme-border)]">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="border-b border-white/10 bg-white/5">
+                    <thead className="border-b border-[var(--theme-border)] bg-[var(--theme-surface)]">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Mark Present</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Student</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Roll No.</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Confidence</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--theme-muted)]">Mark Present</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--theme-muted)]">Student</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--theme-muted)]">Roll No.</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--theme-muted)]">Confidence</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-[var(--theme-border)]">
                       {result.recognizedStudents.map((s: RecognizedStudent) => (
-                        <tr key={s.studentId} className="transition-colors hover:bg-white/5">
+                        <tr key={s.studentId} className="transition-colors hover:bg-[var(--theme-surface)]">
                           <td className="px-6 py-3">
                             <input
                               type="checkbox"
                               checked={selected.has(s.studentId)}
                               onChange={() => toggleSelect(s.studentId)}
-                              className="h-4 w-4 accent-[#FF7A3D]"
+                              className="h-4 w-4 accent-[var(--theme-primary)]"
                             />
                           </td>
                           <td className="px-6 py-3">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FF7A3D]/10 text-sm font-semibold text-[#FF7A3D]">
+                              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--theme-primary)]/10 text-sm font-semibold text-[var(--theme-primary)]">
                                 {s.studentName.charAt(0).toUpperCase()}
                               </div>
-                              <span className="text-sm text-white">{s.studentName}</span>
+                              <span className="text-sm text-[var(--theme-fg)]">{s.studentName}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-3 text-sm text-gray-300">{s.rollNumber}</td>
-                          <td className="px-6 py-3 text-sm text-gray-300">
+                          <td className="px-6 py-3 text-sm text-[var(--theme-fg)]">{s.rollNumber}</td>
+                          <td className="px-6 py-3 text-sm text-[var(--theme-fg)]">
                             {Math.round(s.confidence * 100)}%
                           </td>
                         </tr>
@@ -420,7 +425,7 @@ export function AttendancePage() {
                 type="button"
                 onClick={handleConfirm}
                 disabled={submitting}
-                className={`${buttonSecondary} mt-5 border-[#FF7A3D]/30 bg-[#FF7A3D]/10 text-[#FF7A3D] hover:bg-[#FF7A3D]/20`}
+                className={`${buttonSecondary} mt-5 border-[var(--theme-primary)]/30 bg-[var(--theme-primary)]/10 text-[var(--theme-primary)] hover:bg-[var(--theme-primary)]/20`}
                 style={{ fontFamily: 'Space Grotesk, sans-serif' }}
               >
                 {submitting ? 'Confirming…' : `Confirm ${selected.size} Present`}
@@ -440,45 +445,46 @@ export function AttendancePage() {
       {sessionsLoading ? (
         <Spinner label="Loading sessions…" />
       ) : sessions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/5 px-6 py-14 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/5">
-            <AlertCircle className="text-gray-500" size={24} />
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--theme-border)] bg-[var(--theme-surface)] px-6 py-14 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--theme-surface)]">
+            <AlertCircle className="text-[var(--theme-muted)]" size={24} />
           </div>
-          <p className="text-gray-400">No attendance sessions yet</p>
-          <p className="mt-1 text-sm text-gray-500">Upload a classroom photo above to create your first session</p>
+          <p className="text-[var(--theme-muted)]">No attendance sessions yet</p>
+          <p className="mt-1 text-sm text-[var(--theme-muted)]">Upload a classroom photo above to create your first session</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-white/10">
+        <>
+        <div className="overflow-hidden rounded-lg border border-[var(--theme-border)]">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="border-b border-white/10 bg-white/5">
+              <thead className="border-b border-[var(--theme-border)] bg-[var(--theme-surface)]">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Class</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Present</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Absent</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--theme-muted)]">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--theme-muted)]">Class</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--theme-muted)]">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--theme-muted)]">Present</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--theme-muted)]">Absent</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-[var(--theme-border)]">
                 {sessions.map((session) => (
                   <Fragment key={session.id}>
                     <tr
                       onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
-                      className="cursor-pointer transition-colors hover:bg-white/5"
+                      className="cursor-pointer transition-colors hover:bg-[var(--theme-surface)]"
                     >
-                      <td className="px-6 py-4 text-sm text-gray-300">
+                      <td className="px-6 py-4 text-sm text-[var(--theme-fg)]">
                         {new Date(session.date).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-300">
+                      <td className="px-6 py-4 text-sm text-[var(--theme-fg)]">
                         {session.classId} {session.division}
                       </td>
                       <td className="px-6 py-4">
                         <StatusBadge label={session.status} tone={sessionTone(session.status)} />
                       </td>
                       <td className="px-6 py-4">
-                        <span className="flex items-center gap-2 text-sm text-green-400">
+                        <span className="flex items-center gap-2 text-sm text-[var(--theme-success)]">
                           <UserCheck size={16} /> {presentCount(session)}
                         </span>
                       </td>
@@ -489,29 +495,29 @@ export function AttendancePage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         {expandedId === session.id ? (
-                          <ChevronDown className="ml-auto text-gray-500" size={18} />
+                          <ChevronDown className="ml-auto text-[var(--theme-muted)]" size={18} />
                         ) : (
-                          <ChevronRight className="ml-auto text-gray-500" size={18} />
+                          <ChevronRight className="ml-auto text-[var(--theme-muted)]" size={18} />
                         )}
                       </td>
                     </tr>
                     {expandedId === session.id && (
-                      <tr key={`${session.id}-details`} className="bg-white/5">
+                      <tr key={`${session.id}-details`} className="bg-[var(--theme-surface)]">
                         <td colSpan={6} className="px-6 py-4">
                           {session.records && session.records.length > 0 ? (
                             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                               {session.records.map((record) => (
                                 <div
                                   key={record.id}
-                                  className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+                                  className="flex items-center justify-between rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2"
                                 >
                                   <div className="flex items-center gap-2">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FF7A3D]/10 text-xs font-semibold text-[#FF7A3D]">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--theme-primary)]/10 text-xs font-semibold text-[var(--theme-primary)]">
                                       {record.student?.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                      <div className="text-sm text-white">{record.student?.name}</div>
-                                      <div className="text-xs text-gray-500">{record.student?.rollNumber}</div>
+                                      <div className="text-sm text-[var(--theme-fg)]">{record.student?.name}</div>
+                                      <div className="text-xs text-[var(--theme-muted)]">{record.student?.rollNumber}</div>
                                     </div>
                                   </div>
                                   <StatusBadge
@@ -522,7 +528,7 @@ export function AttendancePage() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-400">No records for this session.</p>
+                            <p className="text-sm text-[var(--theme-muted)]">No records for this session.</p>
                           )}
                         </td>
                       </tr>
@@ -533,6 +539,31 @@ export function AttendancePage() {
             </table>
           </div>
         </div>
+
+        {sessionsMeta.totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between text-sm text-[var(--theme-muted)]">
+            <span>
+              Page {sessionsPage} of {sessionsMeta.totalPages}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => loadSessions(sessionsPage - 1)}
+                disabled={sessionsPage <= 1}
+                className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-1.5 text-[var(--theme-fg)] transition-colors hover:bg-[var(--theme-surface-raised)] disabled:opacity-40"
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => loadSessions(sessionsPage + 1)}
+                disabled={sessionsPage >= sessionsMeta.totalPages}
+                className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-1.5 text-[var(--theme-fg)] transition-colors hover:bg-[var(--theme-surface-raised)] disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+        </>
       )}
       {/* Camera Modal */}
       {cameraActive && cameraStream && (
@@ -544,7 +575,7 @@ export function AttendancePage() {
           onClose={stopCamera}
         />
       )}
-    </div>
+    </PageWrapper>
   );
 }
 
@@ -569,10 +600,10 @@ function CameraModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="relative mx-4 w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-[#0b0f14] shadow-2xl">
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
-          <h3 className="text-sm font-semibold text-white">Live Camera</h3>
-          <button onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-white/10 hover:text-white">
+      <div className="relative mx-4 w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-bg)] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[var(--theme-border)] px-5 py-3">
+          <h3 className="text-sm font-semibold text-[var(--theme-fg)]">Live Camera</h3>
+          <button onClick={onClose} className="rounded-lg p-1 text-[var(--theme-muted)] hover:bg-[var(--theme-surface-raised)] hover:text-[var(--theme-fg)]">
             <X size={18} />
           </button>
         </div>
@@ -580,17 +611,17 @@ function CameraModal({
         <div className="relative bg-black">
           <video ref={videoRef} autoPlay playsInline muted className="w-full" style={{ maxHeight: '60vh' }} />
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-48 w-48 rounded-2xl border-2 border-dashed border-[#FF7A3D]/50" />
+            <div className="h-48 w-48 rounded-2xl border-2 border-dashed border-[var(--theme-primary)]/50" />
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-4 border-t border-white/10 px-5 py-4">
-          <button onClick={onClose} className="rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-gray-300 hover:bg-white/10">
+        <div className="flex items-center justify-center gap-4 border-t border-[var(--theme-border)] px-5 py-4">
+          <button onClick={onClose} className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-5 py-2.5 text-sm text-[var(--theme-fg)] hover:bg-[var(--theme-surface-raised)]">
             Cancel
           </button>
           <button
             onClick={onCapture}
-            className="flex items-center gap-2 rounded-lg bg-[#FF7A3D] px-6 py-2.5 text-sm font-semibold text-[#140A08] hover:bg-[#ff8f5a]"
+            className="flex items-center gap-2 rounded-lg bg-[var(--theme-primary)] px-6 py-2.5 text-sm font-semibold text-[var(--theme-primary-fg)] hover:bg-[var(--theme-primary-hover)]"
             style={{ fontFamily: 'Space Grotesk, sans-serif' }}
           >
             <Camera size={16} />

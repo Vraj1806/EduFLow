@@ -1,5 +1,6 @@
 import { prisma } from '../db.js';
 import { AppError } from '../middleware/error.js';
+import type { PaginationOptions } from '../lib/pagination.js';
 import { createNotification } from './notification.service.js';
 
 export interface CreateAssignmentInput {
@@ -32,11 +33,18 @@ export async function createAssignment(input: CreateAssignmentInput) {
   return assignment;
 }
 
-export async function getAssignments(facultyId: string) {
-  return prisma.assignment.findMany({
-    where: { facultyId },
-    orderBy: { deadline: 'asc' },
-  });
+export async function getAssignments(facultyId: string, pagination: PaginationOptions) {
+  const where = { facultyId };
+  const [total, assignments] = await Promise.all([
+    prisma.assignment.count({ where }),
+    prisma.assignment.findMany({
+      where,
+      orderBy: { deadline: 'asc' },
+      skip: (pagination.page - 1) * pagination.pageSize,
+      take: pagination.pageSize,
+    }),
+  ]);
+  return { assignments, total };
 }
 
 export async function getAssignmentById(id: string, facultyId: string) {

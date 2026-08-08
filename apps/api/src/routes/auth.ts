@@ -1,6 +1,7 @@
 import type { CookieOptions, RequestHandler, Response } from 'express';
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
+import ms from 'ms';
 import { z } from 'zod';
 import { getConfig } from '../config.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -11,6 +12,7 @@ import {
   issueSession,
   refreshSession,
   registerUser,
+  revokeRefreshToken,
 } from '../services/auth.service.js';
 
 const router = Router();
@@ -31,17 +33,29 @@ const loginSchema = z.object({
 
 function cookieOptions(): CookieOptions {
   const cfg = getConfig();
+  const refreshMaxAge = ms(cfg.REFRESH_TOKEN_TTL as ms.StringValue);
   return {
     httpOnly: true,
     sameSite: 'lax',
     secure: cfg.COOKIE_SECURE,
     path: '/',
+    maxAge: Number.isFinite(refreshMaxAge) ? refreshMaxAge : undefined,
   };
 }
 
 function setSessionCookies(res: Response, tokens: { accessToken: string; refreshToken: string }) {
-  res.cookie(ACCESS_COOKIE, tokens.accessToken, cookieOptions());
-  res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions());
+  const cfg = getConfig();
+  const accessMaxAge = ms(cfg.ACCESS_TOKEN_TTL as ms.StringValue);
+  const refreshMaxAge = ms(cfg.REFRESH_TOKEN_TTL as ms.StringValue);
+
+  res.cookie(ACCESS_COOKIE, tokens.accessToken, {
+    ...cookieOptions(),
+    maxAge: Number.isFinite(accessMaxAge) ? accessMaxAge : undefined,
+  });
+  res.cookie(REFRESH_COOKIE, tokens.refreshToken, {
+    ...cookieOptions(),
+    maxAge: Number.isFinite(refreshMaxAge) ? refreshMaxAge : undefined,
+  });
 }
 
 function clearSessionCookies(res: Response) {
@@ -66,18 +80,22 @@ const authLimiter: RequestHandler =
 router.post('/register', authLimiter, async (req, res) => {
   const input = registerSchema.parse(req.body);
   const user = await registerUser(input);
-  setSessionCookies(res, issueSession(user));
+  setSessionCookies(res, await issueSession(user));
   res.status(201).json({ data: { user } });
 });
 
 router.post('/login', authLimiter, async (req, res) => {
   const input = loginSchema.parse(req.body);
   const user = await authenticate(input);
-  setSessionCookies(res, issueSession(user));
+  setSessionCookies(res, await issueSession(user));
   res.json({ data: { user } });
 });
 
-router.post('/logout', (_req, res) => {
+router.post('/logout', async (req, res) => {
+  const token = req.cookies[REFRESH_COOKIE];
+  if (typeof token === 'string' && token.length > 0) {
+    await revokeRefreshToken(token);
+  }
   clearSessionCookies(res);
   res.status(204).end();
 });

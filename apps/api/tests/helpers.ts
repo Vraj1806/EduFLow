@@ -1,8 +1,68 @@
 import request from 'supertest';
+import { vi } from 'vitest';
 import { createApp } from '../src/app.js';
 import { prisma } from '../src/db.js';
 
 export const app = createApp();
+
+/** A deterministic 512-dim vector used for all mocked ML embeddings. */
+export const MOCK_EMBEDDING: number[] = Array.from(
+  { length: 512 },
+  (_, i) => Math.cos(i * 0.001)
+);
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return { ok: status >= 200 && status < 300, status, json: async () => body } as Response;
+}
+
+/**
+ * Stub global.fetch with a deterministic ML sidecar. `/embed` returns the same
+ * embedding every time and `/detect-multi` returns `faces` faces all carrying
+ * that embedding, so a student registered with the same image is always
+ * recognized. Call `unstubMLService()` in afterEach to restore fetch.
+ */
+export function mockMLService(options: { faces?: number } = {}) {
+  const faces = options.faces ?? 1;
+  const boundingBox = { x: 10, y: 20, width: 60, height: 60 };
+  const fetchMock = vi.fn(async (input: string | URL | Request) => {
+    const url = String(input);
+    if (url.endsWith('/health')) {
+      return jsonResponse({
+        status: 'ok',
+        backend: 'demo',
+        models: ['face_detection', 'face_embedding'],
+        modelVersion: 'demo-v1.0',
+        embeddingDim: 512,
+        device: 'demo',
+        loaded: true,
+      });
+    }
+    if (url.endsWith('/detect')) {
+      return jsonResponse({ detected: true, faceCount: faces, confidence: 0.95, boundingBox });
+    }
+    if (url.endsWith('/embed')) {
+      return jsonResponse({ embedding: MOCK_EMBEDDING, modelVersion: 'demo-v1.0', confidence: 0.95 });
+    }
+    if (url.endsWith('/detect-multi')) {
+      return jsonResponse({
+        faces: Array.from({ length: faces }, (_, i) => ({
+          faceIndex: i,
+          confidence: 0.95,
+          boundingBox,
+          embedding: MOCK_EMBEDDING,
+        })),
+      });
+    }
+    return jsonResponse({ detail: 'not found' }, 404);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+/** Restore global.fetch after tests that used `mockMLService()`. */
+export function unstubMLService() {
+  vi.unstubAllGlobals();
+}
 
 /** Extract the value of one cookie from a Set-Cookie header array. */
 export function cookieValue(setCookie: string[], name: string): string {
@@ -85,6 +145,7 @@ export const VALID_IMAGE = 'data:image/png;base64,iVBORw0KGgo=';
 
 /** Wipe all tables in FK-safe order so every test starts clean. */
 export async function resetDb() {
+  await prisma.refreshToken.deleteMany();
   await prisma.attendanceRecord.deleteMany();
   await prisma.attendanceSession.deleteMany();
   await prisma.assignment.deleteMany();

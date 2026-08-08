@@ -1,12 +1,24 @@
-import type { CreateNoticeInput, Notice, UpdateNoticeInput } from '@eduflow/shared';
-import { apiFetch } from './client.ts';
+import type { CreateNoticeInput, Notice, PaginationMeta, UpdateNoticeInput } from '@eduflow/shared';
+import { apiFetch, apiFetchWithMeta } from './client.ts';
 
-export async function getNotices(): Promise<{ notices: Notice[] }> {
-  return apiFetch('/notices');
+export async function getNotices(
+  page = 1,
+  pageSize = 25,
+): Promise<{ notices: Notice[]; meta: PaginationMeta }> {
+  const { data, meta } = await apiFetchWithMeta<{ notices: Notice[] }>(
+    `/notices?page=${page}&pageSize=${pageSize}`,
+  );
+  return { notices: data.notices, meta };
 }
 
-export async function getPublishedNotices(): Promise<{ notices: Notice[] }> {
-  return apiFetch('/notices/published');
+export async function getPublishedNotices(
+  page = 1,
+  pageSize = 25,
+): Promise<{ notices: Notice[]; meta: PaginationMeta }> {
+  const { data, meta } = await apiFetchWithMeta<{ notices: Notice[] }>(
+    `/notices/published?page=${page}&pageSize=${pageSize}`,
+  );
+  return { notices: data.notices, meta };
 }
 
 export async function getNoticeById(id: string): Promise<{ notice: Notice }> {

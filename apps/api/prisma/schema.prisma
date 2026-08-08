@@ -19,13 +19,29 @@ model User {
   email        String   @unique
   passwordHash String
   name         String
-  role         Role     @default(FACULTY)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role          Role           @default(FACULTY)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  students Student[]
+  students      Student[]
+  refreshTokens RefreshToken[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  jti       String    @unique
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }
 
 enum FaceStatus {
@@ -174,8 +190,11 @@ model Notification {
   message    String
   recipient  String
   status     NotificationStatus @default(PENDING)
+  attempts   Int                @default(0)
+  lastError  String?
   sentAt     DateTime?
   createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
 
   @@index([status])
   @@index([recipient])

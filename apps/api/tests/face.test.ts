@@ -1,17 +1,24 @@
 import request from 'supertest';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '../src/db.js';
 import {
   VALID_IMAGE,
   app,
   createStudentViaApi,
+  mockMLService,
   registerFaculty,
   resetDb,
+  unstubMLService,
 } from './helpers.js';
 
 describe('face registration', () => {
   beforeEach(async () => {
     await resetDb();
+    mockMLService();
+  });
+
+  afterEach(() => {
+    unstubMLService();
   });
 
   afterAll(async () => {
@@ -19,6 +26,23 @@ describe('face registration', () => {
   });
 
   describe('POST /api/students/:studentId/face', () => {
+    it('sends the X-ML-Service-Secret header to the ML sidecar', async () => {
+      const fetchMock = mockMLService();
+      const session = await registerFaculty();
+      const student = await createStudentViaApi(session);
+
+      await request(app)
+        .post(`/api/students/${student.id}/face`)
+        .set('Cookie', session.accessToken)
+        .send({ imageBase64: VALID_IMAGE })
+        .expect(201);
+
+      const [input, init] = fetchMock.mock.calls[0] as unknown as [string, { headers?: Record<string, string> }];
+      expect(String(input)).toContain('/embed');
+      const headers = (init?.headers ?? {}) as Record<string, string>;
+      expect(headers['X-ML-Service-Secret']).toBe('test-ml-secret');
+    });
+
     it('registers a face profile and marks the student REGISTERED', async () => {
       const session = await registerFaculty();
       const student = await createStudentViaApi(session);
@@ -31,14 +55,14 @@ describe('face registration', () => {
       expect(res.status).toBe(201);
       expect(res.body.data.faceProfile).toMatchObject({
         studentId: student.id,
-        modelVersion: 'placeholder-v1.0',
+        modelVersion: 'demo-v1.0',
       });
 
       const stored = await prisma.faceProfile.findUnique({
         where: { studentId: student.id },
       });
       expect(stored).not.toBeNull();
-      expect(JSON.parse(stored!.embedding)).toHaveLength(128);
+      expect(JSON.parse(stored!.embedding)).toHaveLength(512);
 
       const dbStudent = await prisma.student.findUnique({ where: { id: student.id } });
       expect(dbStudent!.faceStatus).toBe('REGISTERED');
@@ -125,7 +149,7 @@ describe('face registration', () => {
       expect(res.body.data).toMatchObject({
         faceStatus: 'REGISTERED',
         registered: true,
-        faceProfile: { modelVersion: 'placeholder-v1.0' },
+        faceProfile: { modelVersion: 'demo-v1.0' },
       });
     });
   });

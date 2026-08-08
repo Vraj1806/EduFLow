@@ -1,171 +1,145 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   Aurora Glass Theme — EduFlow
-   Dark glassmorphism, aurora gradient blobs, aqua/magenta accents
+   EduFlow — Centralized Semantic Theme System
+   Three distinct visual identities, ONE architecture:
+     LIGHT  — soft, clean, professional
+     DARK   — deep, focused, premium
+     LUCID  — translucent, luminous, futuristic
+   Components consume semantic tokens (--theme-*). Themes override tokens.
 --------------------------------------------------------------------------- */
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Space Grotesk", var(--font-sans);
+}
 
-  /* Aurora Glass Color System */
-  --color-ink: #0b0f14;
-  --color-aqua: #2dd4bf;
-  --color-aqua-light: #5eead4;
-  --color-magenta: #e879f9;
+/* ---------------------------------------------------------------------------
+   DARK (default) — deep charcoal/navy, elevated surfaces, neutral borders
+--------------------------------------------------------------------------- */
+:root,
+[data-theme="dark"] {
+  --theme-bg: #0d1117;
+  --theme-surface: #151b22;
+  --theme-surface-raised: #1c242e;
+  --theme-border: rgba(255, 255, 255, 0.08);
+  --theme-fg: #e6edf3;
+  --theme-muted: rgba(230, 237, 243, 0.62);
+  --theme-primary: #ff7a3d;
+  --theme-primary-fg: #140a08;
+  --theme-primary-hover: #ff8f5a;
+  --theme-secondary: #a78bfa;
+  --theme-success: #3fb950;
+  --theme-warning: #d29922;
+  --theme-danger: #f85149;
+  --theme-info: #58a6ff;
+  --theme-input-bg: #10161e;
+  --theme-input-border: rgba(255, 255, 255, 0.14);
+  --theme-input-focus-ring: rgba(255, 122, 61, 0.3);
+  --theme-card-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --theme-sidebar-bg: #10151c;
+  color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------------------
+   LIGHT — soft whites, warm surfaces, calm and readable
+--------------------------------------------------------------------------- */
+[data-theme="light"] {
+  --theme-bg: #f6f7f8;
+  --theme-surface: #ffffff;
+  --theme-surface-raised: #eef1f4;
+  --theme-border: #e4e8ec;
+  --theme-fg: #20262d;
+  --theme-muted: #5d6670;
+  --theme-primary: #ff7a3d;
+  --theme-primary-fg: #ffffff;
+  --theme-primary-hover: #f2621f;
+  --theme-secondary: #8b5cf6;
+  --theme-success: #16a34a;
+  --theme-warning: #b45309;
+  --theme-danger: #dc2626;
+  --theme-info: #2563eb;
+  --theme-input-bg: #ffffff;
+  --theme-input-border: #d8dce1;
+  --theme-input-focus-ring: rgba(255, 122, 61, 0.25);
+  --theme-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.07);
+  --theme-sidebar-bg: #ffffff;
+  color-scheme: light;
+}
+
+/* ---------------------------------------------------------------------------
+   LUCID — translucent surfaces, luminous atmosphere, violet-tinted accents
+--------------------------------------------------------------------------- */
+[data-theme="lucid"] {
+  --theme-bg: rgba(16, 14, 32, 0.86);
+  --theme-surface: rgba(255, 255, 255, 0.055);
+  --theme-surface-raised: rgba(255, 255, 255, 0.1);
+  --theme-border: rgba(167, 139, 250, 0.2);
+  --theme-fg: #f2f0fb;
+  --theme-muted: rgba(242, 240, 251, 0.62);
+  --theme-primary: #ff7a3d;
+  --theme-primary-fg: #1a0f0a;
+  --theme-primary-hover: #ff8f5a;
+  --theme-secondary: #a78bfa;
+  --theme-success: #34d399;
+  --theme-warning: #fbbf24;
+  --theme-danger: #fb7185;
+  --theme-info: #8b9cf7;
+  --theme-input-bg: rgba(255, 255, 255, 0.05);
+  --theme-input-border: rgba(255, 255, 255, 0.16);
+  --theme-input-focus-ring: rgba(255, 122, 61, 0.32);
+  --theme-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(167, 139, 250, 0.06), 0 0 24px rgba(167, 139, 250, 0.06);
+  --theme-sidebar-bg: rgba(16, 14, 32, 0.72);
+  color-scheme: dark;
+}
+
+/* Luminous fixed atmosphere behind Lucid content */
+[data-theme="lucid"] body {
+  background-color: #100e20;
+  background-image:
+    radial-gradient(55% 40% at 12% 0%, rgba(167, 139, 250, 0.16), transparent 55%),
+    radial-gradient(45% 35% at 92% 6%, rgba(255, 122, 61, 0.12), transparent 50%),
+    radial-gradient(65% 55% at 50% 112%, rgba(88, 101, 242, 0.1), transparent 60%);
+  background-attachment: fixed;
 }
 
 @layer base {
   html {
-    background-color: var(--color-ink);
-    color-scheme: dark;
+    background-color: var(--theme-bg);
     scroll-behavior: smooth;
   }
 
   body {
     margin: 0;
-    background-color: var(--color-ink);
-    color: rgb(226 232 240);
+    background-color: var(--theme-bg);
+    color: var(--theme-fg);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  :focus-visible {
+    outline: 2px solid var(--theme-input-focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Smooth, instant-feeling theme transitions (active only during a switch) */
+  html.theme-transitioning,
+  html.theme-transitioning *,
+  html.theme-transitioning *::before,
+  html.theme-transitioning *::after {
+    transition:
+      background-color 0.25s ease,
+      border-color 0.25s ease,
+      color 0.25s ease,
+      fill 0.25s ease,
+      stroke 0.25s ease,
+      box-shadow 0.25s ease !important;
+  }
 }
 
 @layer components {
-  /* Aurora blob background system */
-  .aurora-background {
-    position: fixed;
-    inset: 0;
-    z-index: -10;
-    overflow: hidden;
-    background: var(--color-ink);
-  }
-
-  .aurora-blob {
-    position: absolute;
-    border-radius: 9999px;
-    filter: blur(64px);
-    pointer-events: none;
-  }
-
-  .aurora-blob-aqua {
-    background: radial-gradient(circle, #ccfbf1 0%, #5eead4 25%, #2dd4bf 50%, #0f766e 100%);
-  }
-
-  .aurora-blob-magenta {
-    background: radial-gradient(circle, #fbe9ff 0%, #f0abfc 25%, #e879f9 50%, #a21caf 100%);
-  }
-
-  .aurora-blob-deep {
-    background: radial-gradient(circle, #38bdf8 0%, #6366f1 50%, #312e81 100%);
-  }
-
-  /* Grid veil overlay with radial mask */
-  .grid-veil {
-    position: absolute;
-    inset: 0;
-    background-image:
-      repeating-linear-gradient(0deg, transparent, transparent 63px, rgba(45, 212, 191, 0.05) 63px, rgba(45, 212, 191, 0.05) 64px),
-      repeating-linear-gradient(90deg, transparent, transparent 63px, rgba(232, 121, 249, 0.05) 63px, rgba(232, 121, 249, 0.05) 64px);
-    mask-image: radial-gradient(ellipse at center, transparent 0%, black 60%);
-    -webkit-mask-image: radial-gradient(ellipse at center, transparent 0%, black 60%);
-    pointer-events: none;
-  }
-
-  /* Film grain texture */
-  .film-grain {
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-    background-size: 3px 3px;
-    opacity: 0.5;
-    pointer-events: none;
-  }
-
-  /* Darkening overlays for readability */
-  .aurora-overlay {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 0%, var(--color-ink) 100%);
-    pointer-events: none;
-  }
-
-  /* Glassmorphic card — premium frosted glass with hairline border */
-  .glass-card {
-    background: linear-gradient(
-      155deg,
-      rgba(255, 255, 255, 0.085) 0%,
-      rgba(255, 255, 255, 0.025) 100%
-    );
-    backdrop-filter: blur(34px) saturate(140%);
-    -webkit-backdrop-filter: blur(34px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.18),
-      0 30px 80px -20px rgba(0, 0, 0, 0.75);
-    position: relative;
-  }
-
-  /* Glass navigation bar */
-  .glass-nav {
-    background: rgba(11, 15, 20, 0.62);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  }
-
-  /* Gradient text (aqua -> magenta) */
-  .gradient-text {
-    background: linear-gradient(100deg, #2dd4bf 0%, #5eead4 38%, #e879f9 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  /* Gradient CTA button (aqua -> magenta) */
-  .cta-gradient {
-    background: linear-gradient(100deg, #2dd4bf 0%, #5eead4 38%, #e879f9 100%);
-    color: var(--color-ink);
-    font-family: var(--font-display);
-    font-weight: 700;
-    box-shadow:
-      0 8px 16px -4px rgba(45, 212, 191, 0.4),
-      0 4px 8px -2px rgba(232, 121, 249, 0.3);
-    transition: all 0.2s ease;
-  }
-
-  .cta-gradient:hover:not(:disabled) {
-    transform: translateY(-1px);
-    filter: brightness(1.05);
-    box-shadow:
-      0 12px 24px -6px rgba(45, 212, 191, 0.5),
-      0 6px 12px -3px rgba(232, 121, 249, 0.4);
-  }
-
-  /* Input field with glowing aqua focus */
-  .field-input {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-    transition: all 0.18s ease;
-  }
-
-  .field-input:focus {
-    outline: none;
-    background: rgba(45, 212, 191, 0.06);
-    border-color: rgba(45, 212, 191, 0.7);
-    box-shadow:
-      0 0 0 4px rgba(45, 212, 191, 0.14),
-      0 0 26px -4px rgba(45, 212, 191, 0.55);
-  }
-
-  .field-input::placeholder {
-    color: rgb(100, 116, 139);
-  }
-
-  /* Liquid glass (legacy for HeroPage compatibility) */
+  /* Liquid glass (legacy — used by HeroPage) */
   .liquid-glass {
     background: rgba(255, 255, 255, 0.01);
     background-blend-mode: luminosity;

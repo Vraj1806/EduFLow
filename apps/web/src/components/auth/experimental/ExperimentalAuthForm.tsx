@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { AlertCircle, ArrowRight, Mail } from 'lucide-react';
+import { AlertCircle, ArrowRight, Mail, Lock, CheckCircle, Circle } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 
 interface ExperimentalAuthFormProps {
@@ -64,11 +64,21 @@ interface ExperimentalEmailFieldProps {
   id: string;
   value: string;
   onChange: (value: string) => void;
+  error?: string | null;
+  helperText?: string;
 }
 
-export function ExperimentalEmailField({ id, value, onChange }: ExperimentalEmailFieldProps) {
+export function ExperimentalEmailField({
+  id,
+  value,
+  onChange,
+  error,
+  helperText = "We'll never share your email with anyone else.",
+}: ExperimentalEmailFieldProps) {
+  const isValid = /\S+@\S+\.\S+/.test(value);
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <label htmlFor={id} className="text-sm font-medium text-[#FBEFE6]/90">
         Email address
       </label>
@@ -76,7 +86,7 @@ export function ExperimentalEmailField({ id, value, onChange }: ExperimentalEmai
         <Mail
           aria-hidden
           size={17}
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#FBEFE6]/35"
+          className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#FBEFE6]/${isValid ? '35' : '25'}`}
         />
         <input
           id={id}
@@ -85,9 +95,152 @@ export function ExperimentalEmailField({ id, value, onChange }: ExperimentalEmai
           autoComplete="email"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full rounded-xl border border-white/15 bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-[#FBEFE6] placeholder:text-[#FBEFE6]/35 outline-none transition duration-150 focus:border-[#FF7A3D] focus:bg-white/[0.075] focus:ring-4 focus:ring-[#FF7A3D]/15"
+          className={`h-12 w-full rounded-xl border border-white/15 bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-[#FBEFE6] placeholder:text-[#FBEFE6]/35 outline-none transition duration-150 focus:border-[#FF7A3D] focus:bg-white/[0.075] focus:ring-4 focus:ring-[#FF7A3D]/15 ${
+            value && !isValid ? 'border-red-400/50 focus:border-red-400' : ''
+          }`}
           placeholder="you@institution.edu"
+          aria-invalid={!value ? false : !isValid}
+          aria-describedby={`${id}-helper`}
         />
+        {!value && helperText ? (
+          <p id={`${id}-helper`} className="mt-1 text-xs text-[#FBEFE6]/50">
+            {helperText}
+          </p>
+        ) : !value && error ? (
+          <p id={`${id}-helper`} className="mt-1 text-xs text-red-400">
+            {error}
+          </p>
+        ) : value && !isValid ? (
+          <p id={`${id}-helper`} className="mt-1 text-xs text-red-400">
+            Please enter a valid email address
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+interface ExperimentalPasswordFieldProps {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string | null;
+  helperText?: string;
+  showRequirements?: boolean;
+}
+
+export function ExperimentalPasswordField({
+  id,
+  value,
+  onChange,
+  error,
+  helperText = 'Use at least 8 characters',
+  showRequirements = true,
+}: ExperimentalPasswordFieldProps) {
+  const hasMinLength = value.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(value);
+  const hasLowerCase = /[a-z]/.test(value);
+  const hasNumber = /[0-9]/.test(value);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(value);
+
+  const isValid = hasMinLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecial;
+
+  return (
+    <div className="space-y-3">
+      <label htmlFor={id} className="text-sm font-medium text-[#FBEFE6]/90">
+        Password
+      </label>
+      <div className="relative">
+        <Lock
+          aria-hidden
+          size={17}
+          className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#FBEFE6]/${isValid ? '35' : '25'}`}
+        />
+        <input
+          id={id}
+          type="password"
+          required
+          autoComplete="current-password"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={`h-12 w-full rounded-xl border border-white/15 bg-white/[0.04] py-3 pl-11 pr-4 text-sm text-[#FBEFE6] placeholder:text-[#FBEFE6]/35 outline-none transition duration-150 focus:border-[#FF7A3D] focus:bg-white/[0.075] focus:ring-4 focus:ring-[#FF7A3D]/15 ${
+            value && !isValid ? 'border-red-400/50 focus:border-red-400' : ''
+          }`}
+          placeholder="••••••••"
+          aria-invalid={!value ? false : !isValid}
+          aria-describedby={`${id}-helper`}
+        />
+        {!value && helperText ? (
+          <p id={`${id}-helper`} className="mt-1 text-xs text-[#FBEFE6]/50">
+            {helperText}
+          </p>
+        ) : !value && error ? (
+          <p id={`${id}-helper`} className="mt-1 text-xs text-red-400">
+            {error}
+          </p>
+        ) : value && !isValid && showRequirements ? (
+          <>
+            <p id={`${id}-helper`} className="mt-1 text-xs text-red-400">
+              Your password doesn't meet requirements
+            </p>
+            <div className="mt-2 space-y-1 text-xs text-[#FBEFE6]/60">
+              <div className="flex items-start">
+                <span className="flex h-3 w-3 items-center justify-center">
+                  {hasMinLength ? (
+                    <CheckCircle size={3} className="text-green-400" />
+                  ) : (
+                    <Circle size={3} className="text-red-400" />
+                  )}
+                </span>
+                <span className="ml-2">At least 8 characters</span>
+              </div>
+              <div className="flex items-start">
+                <span className="flex h-3 w-3 items-center justify-center">
+                  {hasUpperCase ? (
+                    <CheckCircle size={3} className="text-green-400" />
+                  ) : (
+                    <Circle size={3} className="text-red-400" />
+                  )}
+                </span>
+                <span className="ml-2">At least one uppercase letter</span>
+              </div>
+              <div className="flex items-start">
+                <span className="flex h-3 w-3 items-center justify-center">
+                  {hasLowerCase ? (
+                    <CheckCircle size={3} className="text-green-400" />
+                  ) : (
+                    <Circle size={3} className="text-red-400" />
+                  )}
+                </span>
+                <span className="ml-2">At least one lowercase letter</span>
+              </div>
+              <div className="flex items-start">
+                <span className="flex h-3 w-3 items-center justify-center">
+                  {hasNumber ? (
+                    <CheckCircle size={3} className="text-green-400" />
+                  ) : (
+                    <Circle size={3} className="text-red-400" />
+                  )}
+                </span>
+                <span className="ml-2">At least one number</span>
+              </div>
+              <div className="flex items-start">
+                <span className="flex h-3 w-3 items-center justify-center">
+                  {hasSpecial ? (
+                    <CheckCircle size={3} className="text-green-400" />
+                  ) : (
+                    <Circle size={3} className="text-red-400" />
+                  )}
+                </span>
+                <span className="ml-2">At least one special character</span>
+              </div>
+            </div>
+          </>
+        ) : value && isValid ? (
+          <p id={`${id}-helper`} className="mt-1 text-xs text-green-400">
+            Strong password!
+          </p>
+        ) : null}
       </div>
     </div>
   );

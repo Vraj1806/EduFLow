@@ -176,6 +176,34 @@ describe('POST /api/auth/refresh', () => {
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe('INVALID_TOKEN');
   });
+
+  it('rotates the refresh token on every use and rejects the old one', async () => {
+    const { refreshToken } = await registerUser();
+
+    const first = await request(app).post('/api/auth/refresh').set('Cookie', refreshToken);
+    expect(first.status).toBe(200);
+    const rotatedCookies = first.headers['set-cookie'] as unknown as string[];
+    const rotatedRefresh = cookieValue(rotatedCookies, 'refresh_token');
+
+    // The freshly rotated token must still work…
+    const second = await request(app).post('/api/auth/refresh').set('Cookie', rotatedRefresh);
+    expect(second.status).toBe(200);
+
+    // …but the original token is now revoked server-side.
+    const replay = await request(app).post('/api/auth/refresh').set('Cookie', refreshToken);
+    expect(replay.status).toBe(401);
+    expect(replay.body.error.code).toBe('SESSION_EXPIRED');
+  });
+
+  it('rejects a refresh token that was revoked by a previous logout', async () => {
+    const { refreshToken } = await registerUser();
+
+    await request(app).post('/api/auth/logout').set('Cookie', refreshToken).expect(204);
+
+    const res = await request(app).post('/api/auth/refresh').set('Cookie', refreshToken);
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('SESSION_EXPIRED');
+  });
 });
 
 describe('POST /api/auth/logout', () => {

@@ -1,12 +1,14 @@
 import request from 'supertest';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '../src/db.js';
 import {
   VALID_IMAGE,
   app,
   createStudentViaApi,
+  mockMLService,
   registerFaculty,
   resetDb,
+  unstubMLService,
 } from './helpers.js';
 
 async function seedClass(session: Awaited<ReturnType<typeof registerFaculty>>) {
@@ -300,6 +302,14 @@ describe('attendance', () => {
   });
 
   describe('POST /api/attendance/recognize', () => {
+    beforeEach(() => {
+      mockMLService({ faces: 4 });
+    });
+
+    afterEach(() => {
+      unstubMLService();
+    });
+
     it('detects faces and returns a recognition result', async () => {
       const session = await registerFaculty();
       const res = await request(app)

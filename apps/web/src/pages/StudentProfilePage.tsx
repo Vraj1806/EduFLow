@@ -4,6 +4,7 @@ import { ArrowLeft, Mail, IdCard, Calendar, UserCheck, UserX, Camera, Trash2, Al
 import type { Student } from '@eduflow/shared';
 import * as studentApi from '../api/students.ts';
 import * as faceApi from '../api/face.ts';
+import { PageWrapper } from '../components/PageWrapper.tsx';
 
 export function StudentProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -67,20 +68,20 @@ export function StudentProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0b0f14]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#FF7A3D]/20 border-t-[#FF7A3D]" />
+      <div className="flex min-h-screen items-center justify-center bg-[var(--theme-bg)]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--theme-primary)]/20 border-t-[var(--theme-primary)]" />
       </div>
     );
   }
 
   if (error || !student) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0b0f14] px-6 text-white">
-        <AlertCircle className="mb-4 text-red-400" size={48} />
-        <p className="text-lg text-gray-400">{error || 'Student not found'}</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--theme-bg)] px-6 text-[var(--theme-fg)]">
+        <AlertCircle className="mb-4 text-[var(--theme-danger)]" size={48} />
+        <p className="text-lg text-[var(--theme-muted)]">{error || 'Student not found'}</p>
         <button
           onClick={() => navigate('/dashboard/students')}
-          className="mt-4 text-sm text-[#FF7A3D] hover:text-[#ff8f5a]"
+          className="mt-4 text-sm text-[var(--theme-primary)] hover:text-[var(--theme-primary-hover)]"
         >
           Back to Students
         </button>
@@ -89,11 +90,11 @@ export function StudentProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0f14] px-6 py-10 text-white">
+    <PageWrapper className="min-h-screen bg-[var(--theme-bg)] px-6 py-10 text-[var(--theme-fg)]">
       {/* Back button */}
       <button
         onClick={() => navigate('/dashboard/students')}
-        className="mb-6 flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+        className="mb-6 flex items-center gap-2 text-sm text-[var(--theme-muted)] transition-colors hover:text-[var(--theme-fg)]"
       >
         <ArrowLeft size={16} />
         Back to Students
@@ -101,17 +102,17 @@ export function StudentProfilePage() {
 
       <div className="mx-auto max-w-4xl">
         {/* Student Info Card */}
-        <div className="mb-6 rounded-lg border border-white/10 bg-white/5 p-6">
+        <div className="mb-6 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-6">
           <div className="mb-6 flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FF7A3D]/10 text-2xl font-semibold text-[#FF7A3D]">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--theme-primary)]/10 text-2xl font-semibold text-[var(--theme-primary)]">
                 {student.name.charAt(0).toUpperCase()}
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
                   {student.name}
                 </h1>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-[var(--theme-muted)]">
                   {student.class} {student.division} • {student.department}
                 </p>
               </div>
@@ -119,7 +120,7 @@ export function StudentProfilePage() {
             <button
               onClick={handleDeleteStudent}
               disabled={deleting}
-              className="flex h-9 items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 text-sm text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-50"
+              className="flex h-9 items-center gap-2 rounded-lg border border-[var(--theme-danger)]/30 bg-[var(--theme-danger)]/10 px-3 text-sm text-[var(--theme-danger)] transition-all hover:bg-[var(--theme-danger)]/20 disabled:opacity-50"
             >
               <Trash2 size={14} />
               {deleting ? 'Deleting...' : 'Delete'}
@@ -127,31 +128,31 @@ export function StudentProfilePage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex items-center gap-3 rounded-lg bg-white/5 p-3">
-              <IdCard className="text-gray-400" size={18} />
+            <div className="flex items-center gap-3 rounded-lg bg-[var(--theme-surface)] p-3">
+              <IdCard className="text-[var(--theme-muted)]" size={18} />
               <div>
-                <div className="text-xs text-gray-500">Student ID</div>
+                <div className="text-xs text-[var(--theme-muted)]">Student ID</div>
                 <div className="text-sm font-medium">{student.studentId}</div>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-lg bg-white/5 p-3">
-              <IdCard className="text-gray-400" size={18} />
+            <div className="flex items-center gap-3 rounded-lg bg-[var(--theme-surface)] p-3">
+              <IdCard className="text-[var(--theme-muted)]" size={18} />
               <div>
-                <div className="text-xs text-gray-500">Roll Number</div>
+                <div className="text-xs text-[var(--theme-muted)]">Roll Number</div>
                 <div className="text-sm font-medium">{student.rollNumber}</div>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-lg bg-white/5 p-3">
-              <Mail className="text-gray-400" size={18} />
+            <div className="flex items-center gap-3 rounded-lg bg-[var(--theme-surface)] p-3">
+              <Mail className="text-[var(--theme-muted)]" size={18} />
               <div>
-                <div className="text-xs text-gray-500">Email</div>
+                <div className="text-xs text-[var(--theme-muted)]">Email</div>
                 <div className="text-sm font-medium">{student.email}</div>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-lg bg-white/5 p-3">
-              <Calendar className="text-gray-400" size={18} />
+            <div className="flex items-center gap-3 rounded-lg bg-[var(--theme-surface)] p-3">
+              <Calendar className="text-[var(--theme-muted)]" size={18} />
               <div>
-                <div className="text-xs text-gray-500">Semester</div>
+                <div className="text-xs text-[var(--theme-muted)]">Semester</div>
                 <div className="text-sm font-medium">{student.semester}</div>
               </div>
             </div>
@@ -159,19 +160,19 @@ export function StudentProfilePage() {
         </div>
 
         {/* Face Recognition Card */}
-        <div className="rounded-lg border border-white/10 bg-white/5 p-6">
+        <div className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-6">
           <h2 className="mb-4 text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
             Face Recognition
           </h2>
 
           {student.faceStatus === 'REGISTERED' ? (
             <div>
-              <div className="mb-4 flex items-center gap-3 rounded-lg border border-green-500/20 bg-green-500/10 p-4">
-                <UserCheck className="text-green-400" size={24} />
+              <div className="mb-4 flex items-center gap-3 rounded-lg border border-[var(--theme-success)]/20 bg-[var(--theme-success)]/10 p-4">
+                <UserCheck className="text-[var(--theme-success)]" size={24} />
                 <div>
-                  <div className="font-medium text-green-400">Face Registered</div>
+                  <div className="font-medium text-[var(--theme-success)]">Face Registered</div>
                   {student.faceProfile && (
-                    <div className="mt-1 text-xs text-gray-400">
+                    <div className="mt-1 text-xs text-[var(--theme-muted)]">
                       Model: {student.faceProfile.modelVersion} • Registered{' '}
                       {new Date(student.faceProfile.createdAt).toLocaleDateString()}
                     </div>
@@ -182,7 +183,7 @@ export function StudentProfilePage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => navigate(`/dashboard/students/${id}/register-face`)}
-                  className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-white transition-all hover:bg-white/10"
+                  className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] text-sm font-medium text-[var(--theme-fg)] transition-all hover:bg-[var(--theme-surface-raised)]"
                 >
                   <Camera size={16} />
                   Re-register Face
@@ -190,7 +191,7 @@ export function StudentProfilePage() {
                 <button
                   onClick={handleDeleteFace}
                   disabled={deletingFace}
-                  className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 text-sm font-medium text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-50"
+                  className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--theme-danger)]/30 bg-[var(--theme-danger)]/10 text-sm font-medium text-[var(--theme-danger)] transition-all hover:bg-[var(--theme-danger)]/20 disabled:opacity-50"
                 >
                   <Trash2 size={16} />
                   {deletingFace ? 'Removing...' : 'Remove Face Data'}
@@ -203,7 +204,7 @@ export function StudentProfilePage() {
                 <UserX className="text-amber-400" size={24} />
                 <div>
                   <div className="font-medium text-amber-400">Face Not Registered</div>
-                  <div className="mt-1 text-xs text-gray-400">
+                  <div className="mt-1 text-xs text-[var(--theme-muted)]">
                     Register this student's face to enable AI attendance recognition
                   </div>
                 </div>
@@ -211,7 +212,7 @@ export function StudentProfilePage() {
 
               <button
                 onClick={() => navigate(`/dashboard/students/${id}/register-face`)}
-                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF7A3D] text-sm font-semibold text-[#140A08] transition-all hover:bg-[#ff8f5a]"
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[var(--theme-primary)] text-sm font-semibold text-[var(--theme-primary-fg)] transition-all hover:bg-[var(--theme-primary-hover)]"
                 style={{ fontFamily: 'Space Grotesk, sans-serif' }}
               >
                 <Camera size={16} />
@@ -221,6 +222,6 @@ export function StudentProfilePage() {
           )}
         </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 }

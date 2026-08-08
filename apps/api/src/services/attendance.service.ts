@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../db.js';
+import type { PaginationOptions } from '../lib/pagination.js';
 import { AppError } from '../middleware/error.js';
 
 export interface CreateAttendanceSessionInput {
@@ -48,12 +49,19 @@ export async function createAttendanceSession(input: CreateAttendanceSessionInpu
   });
 }
 
-export async function getAttendanceSessions(facultyId: string) {
-  return prisma.attendanceSession.findMany({
-    where: { facultyId },
-    include: sessionInclude,
-    orderBy: { date: 'desc' },
-  });
+export async function getAttendanceSessions(facultyId: string, pagination: PaginationOptions) {
+  const where = { facultyId };
+  const [total, sessions] = await Promise.all([
+    prisma.attendanceSession.count({ where }),
+    prisma.attendanceSession.findMany({
+      where,
+      include: sessionInclude,
+      orderBy: { date: 'desc' },
+      skip: (pagination.page - 1) * pagination.pageSize,
+      take: pagination.pageSize,
+    }),
+  ]);
+  return { sessions, total };
 }
 
 export async function getAttendanceSessionById(id: string, facultyId: string) {

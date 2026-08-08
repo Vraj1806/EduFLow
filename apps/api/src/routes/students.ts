@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
+import { parsePagination, paginationMeta } from '../lib/pagination.js';
 import * as studentService from '../services/student.service.js';
 
 const router = Router();
@@ -34,15 +35,19 @@ const updateStudentSchema = z.object({
 // GET /students - Get all students or search
 router.get('/', async (req, res) => {
   const query = req.query.q;
+  const pagination = parsePagination(req.query as Record<string, unknown>);
 
-  let students;
+  let result;
   if (typeof query === 'string' && query.trim().length > 0) {
-    students = await studentService.searchStudents(query, req.user!.id);
+    result = await studentService.searchStudents(query, req.user!.id, pagination);
   } else {
-    students = await studentService.getAllStudents(req.user!.id);
+    result = await studentService.getAllStudents(req.user!.id, pagination);
   }
 
-  res.json({ data: { students } });
+  res.json({
+    data: { students: result.students },
+    meta: paginationMeta(pagination.page, pagination.pageSize, result.total),
+  });
 });
 
 // POST /students - Create a new student

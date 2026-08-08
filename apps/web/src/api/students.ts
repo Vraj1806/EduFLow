@@ -1,38 +1,54 @@
-import type { Student, CreateStudentInput, UpdateStudentInput } from '@eduflow/shared';
+import type { PaginationMeta, Student, CreateStudentInput, UpdateStudentInput } from '@eduflow/shared';
 
 const API_BASE = '/api/students';
 
-async function handleResponse<T>(res: Response): Promise<T> {
+interface Envelope<T> {
+  data: T;
+  meta?: PaginationMeta;
+}
+
+async function handleResponse<T>(res: Response): Promise<Envelope<T>> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: { message: 'Request failed' } }));
     throw new Error(body.error?.message || 'Request failed');
   }
   if (res.status === 204) {
-    return undefined as T;
+    return { data: undefined as T };
   }
   const json = await res.json();
-  return json.data;
+  return { data: json.data as T, meta: json.meta as PaginationMeta | undefined };
 }
 
-export async function getAllStudents(): Promise<{ students: Student[] }> {
-  const res = await fetch(API_BASE, {
+export async function getAllStudents(
+  page = 1,
+  pageSize = 25,
+): Promise<{ students: Student[]; meta: PaginationMeta }> {
+  const res = await fetch(`${API_BASE}?page=${page}&pageSize=${pageSize}`, {
     credentials: 'include',
   });
-  return handleResponse(res);
+  const { data, meta } = await handleResponse<{ students: Student[] }>(res);
+  return { students: data.students, meta: meta ?? { page: 1, pageSize: 25, total: 0, totalPages: 0 } };
 }
 
-export async function searchStudents(query: string): Promise<{ students: Student[] }> {
-  const res = await fetch(`${API_BASE}?q=${encodeURIComponent(query)}`, {
+export async function searchStudents(
+  query: string,
+  page = 1,
+  pageSize = 25,
+): Promise<{ students: Student[]; meta: PaginationMeta }> {
+  const params = new URLSearchParams({ q: query, page: String(page), pageSize: String(pageSize) });
+  const res = await fetch(`${API_BASE}?${params}`, {
     credentials: 'include',
   });
-  return handleResponse(res);
+  const { data, meta } = await handleResponse<{ students: Student[] }>(res);
+  return { students: data.students, meta: meta ?? { page: 1, pageSize: 25, total: 0, totalPages: 0 } };
 }
 
 export async function getStudentById(id: string): Promise<{ student: Student }> {
   const res = await fetch(`${API_BASE}/${id}`, {
     credentials: 'include',
   });
-  return handleResponse(res);
+  const { data } = await handleResponse<{ student: Student }>(res);
+  return data;
 }
 
 export async function createStudent(input: CreateStudentInput): Promise<{ student: Student }> {
@@ -42,7 +58,8 @@ export async function createStudent(input: CreateStudentInput): Promise<{ studen
     credentials: 'include',
     body: JSON.stringify(input),
   });
-  return handleResponse(res);
+  const { data } = await handleResponse<{ student: Student }>(res);
+  return data;
 }
 
 export async function updateStudent(
@@ -55,7 +72,8 @@ export async function updateStudent(
     credentials: 'include',
     body: JSON.stringify(input),
   });
-  return handleResponse(res);
+  const { data } = await handleResponse<{ student: Student }>(res);
+  return data;
 }
 
 export async function deleteStudent(id: string): Promise<void> {
@@ -63,5 +81,5 @@ export async function deleteStudent(id: string): Promise<void> {
     method: 'DELETE',
     credentials: 'include',
   });
-  return handleResponse(res);
+  await handleResponse<void>(res);
 }

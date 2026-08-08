@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Megaphone, Pencil, Plus, Send, Trash2 } from 'lucide-react';
-import type { CreateNoticeInput, Notice } from '@eduflow/shared';
+import type { CreateNoticeInput, Notice, PaginationMeta } from '@eduflow/shared';
 import * as noticeApi from '../api/notices.ts';
+import { PageWrapper } from '../components/PageWrapper.tsx';
 import {
   EmptyState,
   ErrorBanner,
@@ -30,13 +31,17 @@ export function NoticesPage() {
   const [form, setForm] = useState<CreateNoticeInput>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<PaginationMeta>({ page: 1, pageSize: 25, total: 0, totalPages: 0 });
 
-  const loadNotices = useCallback(async () => {
+  const loadNotices = useCallback(async (p = 1) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await noticeApi.getNotices();
+      const data = await noticeApi.getNotices(p);
       setNotices(data.notices);
+      setMeta(data.meta);
+      setPage(p);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load notices');
     } finally {
@@ -45,7 +50,7 @@ export function NoticesPage() {
   }, []);
 
   useEffect(() => {
-    loadNotices();
+    loadNotices(1);
   }, [loadNotices]);
 
   function openCreate() {
@@ -111,14 +116,14 @@ export function NoticesPage() {
     if (!confirm(`Delete notice "${notice.title}"?`)) return;
     try {
       await noticeApi.deleteNotice(notice.id);
-      loadNotices();
+      loadNotices(page);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete notice');
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0f14] px-6 py-10 text-white">
+    <PageWrapper className="min-h-screen bg-[var(--theme-bg)] px-6 py-10 text-[var(--theme-fg)]">
       <PageHeader
         title="Notices"
         subtitle="Create and publish notices to your classes"
@@ -134,7 +139,7 @@ export function NoticesPage() {
 
       {/* Form */}
       {formOpen && (
-        <div className="mb-8 rounded-lg border border-white/10 bg-white/5 p-6">
+        <div className="mb-8 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-6">
           <h2 className="mb-4 text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
             {editingId ? 'Edit Notice' : 'New Notice'}
           </h2>
@@ -143,8 +148,8 @@ export function NoticesPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="n-title" className="mb-1.5 block text-sm font-medium text-gray-300">
-                Title <span className="text-red-400">*</span>
+              <label htmlFor="n-title" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
+                Title <span className="text-[var(--theme-danger)]">*</span>
               </label>
               <input
                 id="n-title"
@@ -158,8 +163,8 @@ export function NoticesPage() {
             </div>
 
             <div>
-              <label htmlFor="n-content" className="mb-1.5 block text-sm font-medium text-gray-300">
-                Content <span className="text-red-400">*</span>
+              <label htmlFor="n-content" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
+                Content <span className="text-[var(--theme-danger)]">*</span>
               </label>
               <textarea
                 id="n-content"
@@ -174,7 +179,7 @@ export function NoticesPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="n-class" className="mb-1.5 block text-sm font-medium text-gray-300">
+                <label htmlFor="n-class" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
                   Target Class (optional)
                 </label>
                 <input
@@ -187,7 +192,7 @@ export function NoticesPage() {
                 />
               </div>
               <div>
-                <label htmlFor="n-div" className="mb-1.5 block text-sm font-medium text-gray-300">
+                <label htmlFor="n-div" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
                   Target Division (optional)
                 </label>
                 <input
@@ -228,20 +233,21 @@ export function NoticesPage() {
           }
         />
       ) : (
+        <>
         <div className="space-y-4">
           {notices.map((notice) => (
-            <div key={notice.id} className="rounded-lg border border-white/10 bg-white/5 p-5">
+            <div key={notice.id} className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-5">
               <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FF7A3D]/10 text-[#FF7A3D]">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--theme-primary)]/10 text-[var(--theme-primary)]">
                     <Megaphone size={18} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <h3 className="font-semibold text-[var(--theme-fg)]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
                       {notice.title}
                     </h3>
-                    <p className="mt-1 text-sm text-gray-400">{notice.content}</p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                    <p className="mt-1 text-sm text-[var(--theme-muted)]">{notice.content}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--theme-muted)]">
                       <StatusBadge label={notice.publishedAt ? 'Published' : 'Draft'} tone={notice.publishedAt ? 'green' : 'amber'} />
                       {(notice.targetClass || notice.targetDiv) && (
                         <StatusBadge label={`${notice.targetClass ?? 'All'} ${notice.targetDiv ?? ''}`.trim()} tone="gray" />
@@ -258,7 +264,7 @@ export function NoticesPage() {
                   {!notice.publishedAt && (
                     <button
                       onClick={() => handlePublish(notice)}
-                      className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-400 transition-all hover:bg-green-500/20"
+                      className="flex items-center gap-2 rounded-lg border border-[var(--theme-success)]/30 bg-[var(--theme-success)]/10 px-3 py-2 text-sm text-[var(--theme-success)] transition-all hover:bg-[var(--theme-success)]/20"
                     >
                       <Send size={15} />
                       Publish
@@ -266,14 +272,14 @@ export function NoticesPage() {
                   )}
                   <button
                     onClick={() => openEdit(notice)}
-                    className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-300 transition-all hover:bg-white/10"
+                    className="flex items-center gap-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm text-[var(--theme-fg)] transition-all hover:bg-[var(--theme-surface-raised)]"
                   >
                     <Pencil size={15} />
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(notice)}
-                    className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400 transition-all hover:bg-red-500/20"
+                    className="flex items-center gap-2 rounded-lg border border-[var(--theme-danger)]/30 bg-[var(--theme-danger)]/10 px-3 py-2 text-sm text-[var(--theme-danger)] transition-all hover:bg-[var(--theme-danger)]/20"
                   >
                     <Trash2 size={15} />
                     Delete
@@ -283,7 +289,32 @@ export function NoticesPage() {
             </div>
           ))}
         </div>
+
+        {meta.totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between text-sm text-[var(--theme-muted)]">
+            <span>
+              Page {page} of {meta.totalPages}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => loadNotices(page - 1)}
+                disabled={page <= 1}
+                className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-1.5 text-[var(--theme-fg)] transition-colors hover:bg-[var(--theme-surface-raised)] disabled:opacity-40"
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => loadNotices(page + 1)}
+                disabled={page >= meta.totalPages}
+                className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-1.5 text-[var(--theme-fg)] transition-colors hover:bg-[var(--theme-surface-raised)] disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+        </>
       )}
-    </div>
+    </PageWrapper>
   );
 }

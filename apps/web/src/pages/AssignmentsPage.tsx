@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AlertCircle, CalendarClock, Pencil, Plus, Trash2 } from 'lucide-react';
-import type { Assignment, CreateAssignmentInput } from '@eduflow/shared';
+import type { Assignment, CreateAssignmentInput, PaginationMeta } from '@eduflow/shared';
 import * as assignmentApi from '../api/assignments.ts';
+import { PageWrapper } from '../components/PageWrapper.tsx';
 import {
   EmptyState,
   ErrorBanner,
@@ -36,13 +37,17 @@ export function AssignmentsPage() {
   const [form, setForm] = useState<CreateAssignmentInput>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<PaginationMeta>({ page: 1, pageSize: 25, total: 0, totalPages: 0 });
 
-  const loadAssignments = useCallback(async () => {
+  const loadAssignments = useCallback(async (p = 1) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await assignmentApi.getAssignments();
+      const data = await assignmentApi.getAssignments(p);
       setAssignments(data.assignments);
+      setMeta(data.meta);
+      setPage(p);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load assignments');
     } finally {
@@ -51,7 +56,7 @@ export function AssignmentsPage() {
   }, []);
 
   useEffect(() => {
-    loadAssignments();
+    loadAssignments(1);
   }, [loadAssignments]);
 
   function openCreate() {
@@ -104,7 +109,7 @@ export function AssignmentsPage() {
     if (!confirm(`Delete assignment "${assignment.title}"?`)) return;
     try {
       await assignmentApi.deleteAssignment(assignment.id);
-      loadAssignments();
+      loadAssignments(page);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete assignment');
     }
@@ -113,7 +118,7 @@ export function AssignmentsPage() {
   const now = new Date();
 
   return (
-    <div className="min-h-screen bg-[#0b0f14] px-6 py-10 text-white">
+    <PageWrapper className="min-h-screen bg-[var(--theme-bg)] px-6 py-10 text-[var(--theme-fg)]">
       <PageHeader
         title="Assignments"
         subtitle="Create and manage assignments for your classes"
@@ -129,7 +134,7 @@ export function AssignmentsPage() {
 
       {/* Form */}
       {formOpen && (
-        <div className="mb-8 rounded-lg border border-white/10 bg-white/5 p-6">
+        <div className="mb-8 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-6">
           <h2 className="mb-4 text-lg font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
             {editingId ? 'Edit Assignment' : 'New Assignment'}
           </h2>
@@ -138,8 +143,8 @@ export function AssignmentsPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="title" className="mb-1.5 block text-sm font-medium text-gray-300">
-                Title <span className="text-red-400">*</span>
+              <label htmlFor="title" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
+                Title <span className="text-[var(--theme-danger)]">*</span>
               </label>
               <input
                 id="title"
@@ -153,8 +158,8 @@ export function AssignmentsPage() {
             </div>
 
             <div>
-              <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-gray-300">
-                Description <span className="text-red-400">*</span>
+              <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
+                Description <span className="text-[var(--theme-danger)]">*</span>
               </label>
               <textarea
                 id="description"
@@ -169,8 +174,8 @@ export function AssignmentsPage() {
 
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label htmlFor="a-class" className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Class <span className="text-red-400">*</span>
+                <label htmlFor="a-class" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
+                  Class <span className="text-[var(--theme-danger)]">*</span>
                 </label>
                 <input
                   id="a-class"
@@ -183,8 +188,8 @@ export function AssignmentsPage() {
                 />
               </div>
               <div>
-                <label htmlFor="a-division" className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Division <span className="text-red-400">*</span>
+                <label htmlFor="a-division" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
+                  Division <span className="text-[var(--theme-danger)]">*</span>
                 </label>
                 <input
                   id="a-division"
@@ -197,8 +202,8 @@ export function AssignmentsPage() {
                 />
               </div>
               <div>
-                <label htmlFor="a-deadline" className="mb-1.5 block text-sm font-medium text-gray-300">
-                  Deadline <span className="text-red-400">*</span>
+                <label htmlFor="a-deadline" className="mb-1.5 block text-sm font-medium text-[var(--theme-fg)]">
+                  Deadline <span className="text-[var(--theme-danger)]">*</span>
                 </label>
                 <input
                   id="a-deadline"
@@ -243,22 +248,23 @@ export function AssignmentsPage() {
           }
         />
       ) : (
+        <>
         <div className="grid gap-4 lg:grid-cols-2">
           {assignments.map((assignment) => {
             const deadline = new Date(assignment.deadline);
             const overdue = deadline < now;
             return (
-              <div key={assignment.id} className="rounded-lg border border-white/10 bg-white/5 p-5">
+              <div key={assignment.id} className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-5">
                 <div className="mb-2 flex items-start justify-between gap-3">
-                  <h3 className="font-semibold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                  <h3 className="font-semibold text-[var(--theme-fg)]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
                     {assignment.title}
                   </h3>
                   {overdue ? <StatusBadge label="Overdue" tone="red" /> : <StatusBadge label="Upcoming" tone="green" />}
                 </div>
-                <p className="mb-4 line-clamp-2 text-sm text-gray-400">{assignment.description}</p>
-                <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-300">
+                <p className="mb-4 line-clamp-2 text-sm text-[var(--theme-muted)]">{assignment.description}</p>
+                <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-[var(--theme-fg)]">
                   <StatusBadge label={`${assignment.classId} ${assignment.division}`} tone="orange" />
-                  <span className="flex items-center gap-1.5 text-gray-400">
+                  <span className="flex items-center gap-1.5 text-[var(--theme-muted)]">
                     <CalendarClock size={15} />
                     Due {deadline.toLocaleDateString()}
                   </span>
@@ -266,14 +272,14 @@ export function AssignmentsPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => openEdit(assignment)}
-                    className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-300 transition-all hover:bg-white/10"
+                    className="flex items-center gap-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm text-[var(--theme-fg)] transition-all hover:bg-[var(--theme-surface-raised)]"
                   >
                     <Pencil size={15} />
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(assignment)}
-                    className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400 transition-all hover:bg-red-500/20"
+                    className="flex items-center gap-2 rounded-lg border border-[var(--theme-danger)]/30 bg-[var(--theme-danger)]/10 px-3 py-2 text-sm text-[var(--theme-danger)] transition-all hover:bg-[var(--theme-danger)]/20"
                   >
                     <Trash2 size={15} />
                     Delete
@@ -283,14 +289,39 @@ export function AssignmentsPage() {
             );
           })}
         </div>
+
+        {meta.totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between text-sm text-[var(--theme-muted)]">
+            <span>
+              Page {page} of {meta.totalPages}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => loadAssignments(page - 1)}
+                disabled={page <= 1}
+                className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-1.5 text-[var(--theme-fg)] transition-colors hover:bg-[var(--theme-surface-raised)] disabled:opacity-40"
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => loadAssignments(page + 1)}
+                disabled={page >= meta.totalPages}
+                className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-1.5 text-[var(--theme-fg)] transition-colors hover:bg-[var(--theme-surface-raised)] disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+        </>
       )}
 
       {!loading && assignments.length > 0 && assignments.some((a) => new Date(a.deadline) >= now) && (
-        <div className="mt-6 flex items-center gap-2 text-sm text-gray-500">
+        <div className="mt-6 flex items-center gap-2 text-sm text-[var(--theme-muted)]">
           <AlertCircle size={15} />
           Deadline reminders will be automated through the notification service in a future phase.
         </div>
       )}
-    </div>
+    </PageWrapper>
   );
 }

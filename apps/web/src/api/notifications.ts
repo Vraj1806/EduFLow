@@ -1,11 +1,19 @@
-import type { CreateNotificationInput, Notification } from '@eduflow/shared';
-import { apiFetch } from './client.ts';
+import type { CreateNotificationInput, Notification, PaginationMeta } from '@eduflow/shared';
+import { apiFetch, apiFetchWithMeta } from './client.ts';
 
-export async function getNotifications(): Promise<{
+export async function getNotifications(
+  page = 1,
+  pageSize = 25,
+): Promise<{
   notifications: Notification[];
   pending: number;
+  meta: PaginationMeta;
 }> {
-  return apiFetch('/notifications');
+  const { data, meta } = await apiFetchWithMeta<{
+    notifications: Notification[];
+    pending: number;
+  }>(`/notifications?page=${page}&pageSize=${pageSize}`);
+  return { notifications: data.notifications, pending: data.pending, meta };
 }
 
 export async function createNotification(

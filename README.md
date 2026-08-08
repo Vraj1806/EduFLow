@@ -7,7 +7,8 @@ AI-powered faculty automation platform. Monorepo with clearly separated frontend
 - **Phase 1 — Foundation & Faculty Authentication:** COMPLETE
 - **Phase 2 — Student Management + Face Registration:** COMPLETE (see [PHASE2_COMPLETE.md](PHASE2_COMPLETE.md))
 - **Phase 3+ — Attendance, Assignments, Notices, Analytics, Reports, AI:** COMPLETE (see [PHASE3_COMPLETE.md](PHASE3_COMPLETE.md))
-- **Phase 4 — Real ML Integration:** PLANNED (research done in `.agent/ML_RESEARCH.md`)
+- **Phase 4 — Real ML Integration:** COMPLETE (FastAPI + InsightFace sidecar wired into the Express API; see `.agent/ML_RESEARCH.md`)
+- **Backlog P0/P1:** COMPLETE — SMTP notification delivery, PDF/CSV report export, PostgreSQL support (initial migration in `apps/api/prisma/migrations`), profile-photo object storage, and a security hardening pass. See `AGENTS.md`.
 
 ## Structure
 
@@ -61,7 +62,9 @@ npx playwright test             # browser tests (API :4000 + web :5173 auto-star
 ## Environment variables
 
 All secrets live in `apps/api/.env` (gitignored). Never hardcode secrets in source.
-See `apps/api/.env.example` for the full list with explanations.
+See `apps/api/.env.example` for the full list with explanations, including the
+optional SMTP (`NOTIFICATIONS_ENABLED`, `SMTP_*`), storage (`STORAGE_PROVIDER`,
+`S3_*`), and PostgreSQL (`DATABASE_URL` as a `postgres://` URL) settings.
 
 ## Conventions
 

@@ -1,155 +1,76 @@
 # EDUFLOW SESSION RESUME CHECKPOINT
 
-**Created:** 2026-08-02 21:45 UTC  
-**Session:** 3 — UI Redesign + Theme System  
-**Status:** SESSION IN PROGRESS — Theme system built, dashboard started
+**Created:** 2026-08-02 21:45 UTC
+**Updated:** 2026-08-08 UTC
+**Session:** 6/6 — P0/P1 Backlog — COMPLETE ✅
+**Status:** 🟢 P0 (SMTP notifications, PDF/CSV export) and P1 (PostgreSQL, object storage, security) done & verified. All quality gates green.
 
 ---
 
-## SESSION 3 SUMMARY
+## SESSION 6/6 — WHAT HAPPENED
 
-### Auth UI Redesign ✅
-- Analyzed existing Login/Register pages, auth context, API client, routing, styles, design tokens
-- Created Superdesign project and init files (`.superdesign/init/`, `.superdesign/design-system.md`)
-- Generated pixel-perfect baseline draft + premium experiment draft on canvas
-- Built experimental auth components: `ExperimentalAuthLayout`, `ExperimentalAuthCard`, `ExperimentalAuthForm`, `ExperimentalPasswordField`
-- Built experimental pages: `AuthExperimentLoginPage`, `AuthExperimentRegisterPage`
-- Connected to existing `useAuth()` — real cookie-based auth, no mocks
-- Made experimental design the default, deleted old `LoginPage.tsx` and `RegisterPage.tsx`
-- 12/12 Playwright tests passing
-- Committed as `cbb77d7` and pushed to `main`
+### 1. Notification delivery (SMTP) — DONE ✅
+- `services/mailer.ts` (nodemailer, lazy transport, `503 NOTIFICATIONS_DISABLED` when off, `503 SMTP_NOT_CONFIGURED` when no host).
+- `services/notification.service.ts`: `deliverPendingNotifications()` drains PENDING oldest-first, resolves User id → email, marks SENT/FAILED with `attempts` + `lastError` (retry up to `NOTIFICATION_MAX_ATTEMPTS`). Never fakes delivery.
+- `services/notificationWorker.ts`: interval (default 30s) + immediate boot drain, `unref()`; started/stopped from `index.ts`.
+- Schema: `Notification` gained `attempts Int @default(0)`, `lastError String?`.
+- Env: `NOTIFICATIONS_ENABLED`, `SMTP_HOST/PORT/SECURE/USER/PASS/FROM`, `NOTIFICATION_POLL_MS`, `NOTIFICATION_MAX_ATTEMPTS`.
 
-### Master Design System ✅
-- Updated `.superdesign/design-system.md` with full master design specification
-- Three-theme system: Dark, Light, Glass
-- Centralized CSS variable tokens (`--theme-*`)
-- Component consistency rules, typography scale, spacing grid, animation guidelines
+### 2. Report export (PDF/CSV) — DONE ✅
+- `services/reportExport.service.ts`: `attendanceReportToCsv()` (BOM, summary block) + `attendanceReportToPdf()` (pdfkit).
+- `GET /api/reports/attendance/export?format=csv|pdf` + filters; report meta now `available: true`.
+- `ReportsPage.tsx` export buttons → `getReportExportUrl()` (same-origin download).
 
-### Centralized Theme System ✅
-- Created `src/theme/ThemeContext.tsx` — ThemeProvider with localStorage persistence
-- Added 3 complete theme token sets in `styles.css` via `[data-theme]` CSS selectors
-- Dark: `#0B0F14` bg, `#140A08` surface, white/10 borders
-- Light: `#F8F9FA` bg, `#FFFFFF` surface, `#E2E8F0` borders
-- Glass: `#0B0F14` bg, `rgba(20,10,8,0.32)` surface, orange/30 borders, 18px blur
-- Wired ThemeProvider into `App.tsx`
+### 3. PostgreSQL support — DONE ✅
+- Schema is provider-agnostic; generated `prisma/migrations/0_init/migration.sql` (Postgres DDL). Dev/CI stay SQLite + `db push`.
 
-### Experimental Dashboard ✅
-- Created `src/components/AppShellExperiment.tsx` — theme-aware shell with sidebar, inline theme switcher (3 buttons: Dark/Light/Glass), mobile menu with Framer Motion
-- Created `src/components/ProtectedRouteExperiment.tsx` — auth gate for experimental routes
-- Created `src/pages/DashboardExperimentPage.tsx` — premium dashboard with staggered stat cards, quick actions, date display, Framer Motion entrance animations
-- All colors use CSS variables (`--theme-*`), not hardcoded hex
-- Accessible: labels, aria-pressed on theme buttons, reduced motion support
+### 4. Object storage — DONE ✅
+- `services/storage.service.ts` (`STORAGE_PROVIDER=none|local|s3`); local writes `apps/api/uploads`, served at `/uploads`; student create/update/delete store + clean up; data-URL validation (10 MB cap); S3 adapter lazy-loads `@aws-sdk/client-s3`.
 
-### Verification ✅
-| Gate | Status |
-|------|--------|
-| Typecheck | Clean |
-| Lint | 0 errors (3 pre-existing warnings) |
-| Web tests | 1/1 passing |
+### 5. Security audit — DONE ✅
+- Helmet CSP (`script-src 'self'`, images `data:`/`blob:`/`https:`, no frames), theme pre-paint externalized to `apps/web/public/theme-init.js`, global + auth rate limits, cookie `maxAge`, `npm audit fix` (nanoid).
+
+### 6. Tests + docs — DONE ✅
+- API tests 109 → **133** (SMTP delivery incl. retry→FAILED, CSV/PDF export, storage local/s3/none, mailer, worker). All gates green: typecheck, lint (0 errors), web 1, browser 18, ML 11, coverage thresholds met.
 
 ---
 
-## GIT HISTORY
+## GIT STATUS
 
 ```
-cbb77d7  Redesign auth UI: premium glass card, Framer Motion, accessible forms
-3e8c5c2  Revert Vercel changes
-d923910  Fix Vercel build: explicit build order via root script
-c8fc8a0  Fix build order: shared types before apps
-1718db4  Revert Vercel changes
-e0e66ae  Vercel deployment config + API_URL env var support
-f166c0e  EduFlow: full monorepo with tests, lint, CI, live camera attendance
+(working tree — not committed)
 ```
-
-**Remote:** https://github.com/Vraj1806/EduFLow
-
----
-
-## WHAT EXISTS NOW
-
-### Routes
-| Route | Component | Status |
-|-------|-----------|--------|
-| `/`, `/login` | `AuthExperimentLoginPage` | Production (new default) |
-| `/register` | `AuthExperimentRegisterPage` | Production (new default) |
-| `/hero` | `HeroPage` | Unchanged |
-| `/dashboard` | `DashboardPage` | Old (original dark only) |
-| `/dashboard/students` | `StudentsPage` | Unchanged |
-| `/dashboard/attendance` | `AttendancePage` | Unchanged |
-| `/dashboard/assignments` | `AssignmentsPage` | Unchanged |
-| `/dashboard/notices` | `NoticesPage` | Unchanged |
-| `/dashboard/analytics` | `AnalyticsPage` | Unchanged |
-| `/dashboard/reports` | `ReportsPage` | Unchanged |
-| `/dashboard/settings` | `SettingsPage` | Unchanged |
-| `/dashboard-experiment` | `DashboardExperimentPage` | **NEW — experimental** |
-
-### Theme System
-- `src/theme/ThemeContext.tsx` — ThemeProvider + useTheme hook
-- CSS tokens: `--theme-bg`, `--theme-surface`, `--theme-border`, `--theme-fg`, `--theme-muted`, `--theme-primary`, `--theme-primary-fg`, `--theme-primary-hover`, `--theme-success/warning/danger/info`, `--theme-input-*`, `--theme-card-shadow`, `--theme-sidebar-bg`
-- 3 themes: Dark (default), Light, Glass
-- Persisted to `localStorage` key `eduflow-theme`
-
-### Experimental Components
-- `src/components/AppShellExperiment.tsx` — theme-aware shell with inline theme switcher
-- `src/components/ProtectedRouteExperiment.tsx` — auth gate
-- `src/pages/DashboardExperimentPage.tsx` — premium dashboard
+Remote: https://github.com/Vraj1806/EduFLow
 
 ---
 
-## REMAINING WORK (Session 3 continuation)
+## NEXT (when you return)
 
-### IN PROGRESS — Dashboard Redesign
-- [ ] Add theme switcher to existing Settings page
-- [ ] Make experimental dashboard the default (`/dashboard`)
-- [ ] Remove old `DashboardPage.tsx` and `AppShell.tsx`
-- [ ] Update all other pages to use theme tokens (Students, Attendance, Assignments, Notices, Analytics, Reports, Settings)
-- [ ] Update all pages to use `bg-[var(--theme-bg)]` instead of hardcoded `bg-[#0b0f14]`
-
-### PENDING — Theme-Aware Pages
-Each existing page needs theme token updates:
-- `StudentsPage.tsx` — hardcoded `bg-[#0b0f14]` and `border-white/10`
-- `AttendancePage.tsx` — same
-- `AssignmentsPage.tsx` — same
-- `NoticesPage.tsx` — same
-- `AnalyticsPage.tsx` — same
-- `ReportsPage.tsx` — same
-- `SettingsPage.tsx` — same + add theme switcher section
-- `AppShell.tsx` — replace with `AppShellExperiment.tsx` or make theme-aware
-
-### PENDING — Settings Theme Switcher
-- Add Appearance section to Settings page with Dark/Light/Glass radio buttons
-- Should call `useTheme().setTheme()`
-
-### PENDING — Other UI Improvements per Design System
-- Component consistency across all pages
-- Framer Motion entrance animations on all pages
-- Responsive design audit (1440+, 1280, 1024, 768, 390)
-- Interaction states (hover, focus, active, disabled, loading)
-
-### P0 — Still Open
-- ML Integration (placeholder functions to replace)
-- Notification Delivery
-- Report Export
+- **Commit the session**: the working tree contains Phase 4 ML + Phase 5 UI + this P0/P1 work. No commits were made during these sessions.
+- **Verify production readiness**: real SMTP creds (`NOTIFICATIONS_ENABLED=true`), decide `STORAGE_PROVIDER` (local default; S3 needs `@aws-sdk/client-s3`), Postgres via `prisma migrate deploy` + `prisma.config.ts` migration.
+- **Follow-ups (documented in STATE.md)**: refresh-token revocation, CSP nonce for production, exponential backoff for SMTP retries, object storage presigned URLs.
 
 ---
 
 ## ENVIRONMENT
 
 - **Dev servers:** `npm run dev` (API :4000, Web :5173)
+- **ML service:** `apps/ml/.venv/Scripts/python.exe -m src.main` (default `ML_BACKEND=insightface`, :5000; offline dev: set `ML_BACKEND=demo`)
 - **Database:** SQLite at `apps/api/prisma/dev.db`
 - **Admin:** `admin@eduflow.local` / `rBn5u+3h0/ZfNc9d`
-- **Tests:** `npm test` (unit), `npx playwright test` (browser)
+- **Tests:** `npm test` (unit), `npx playwright test` (browser), ML: `apps/ml/.venv/Scripts/python.exe -m pytest apps/ml/tests -q`
 - **Coverage:** `npm run test:coverage -w apps/api`
-- **Experimental dashboard:** http://localhost:5173/dashboard-experiment
+- **Design spec:** `.superdesign/design-system.md`
+- **ML research:** `.agent/ML_RESEARCH.md`
 
 ---
 
-## TO CONTINUE
+## KEY CONTEXT
 
-Say "continue" and the agent will pick up from "REMAINING WORK" above. The project memory is at `.agent/` directory. The design system is at `.superdesign/design-system.md`.
-
-Key context for the next session:
-1. Theme system is built and working — Dark/Light/Glass with CSS variables
-2. Experimental dashboard exists at `/dashboard-experiment` with theme switcher in sidebar
-3. Next step: make experimental dashboard default, update all pages to theme tokens
-4. Master design spec is at `.superdesign/design-system.md` — READ IT FIRST
+1. Three themes fully working (Light/Dark/Lucid); all pages animated + tokenized.
+2. ML: FastAPI sidecar + Express integration complete; real InsightFace verified end-to-end.
+3. 512-dim embeddings throughout (was placeholder 128-dim).
+4. All quality gates green at session end: 133 API tests, 1 web, 18 browser, 11 ML, lint/typecheck/build/coverage, npm audit clean.
+5. ML disabled by default (`ML_ENABLED=false`) → clean 503s, no fabricated results.
+6. Notifications disabled by default (`NOTIFICATIONS_ENABLED=false`) → queue stays PENDING, never faked SENT.
+7. Storage default `none` (photos inline); enable `local`/`s3` deliberately.

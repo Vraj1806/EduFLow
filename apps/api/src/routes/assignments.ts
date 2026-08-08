@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
+import { parsePagination, paginationMeta } from '../lib/pagination.js';
 import * as assignmentService from '../services/assignment.service.js';
 
 const router = Router();
@@ -30,8 +31,12 @@ router.post('/', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
-  const assignments = await assignmentService.getAssignments(req.user!.id);
-  res.json({ data: { assignments } });
+  const pagination = parsePagination(req.query as Record<string, unknown>);
+  const { assignments, total } = await assignmentService.getAssignments(req.user!.id, pagination);
+  res.json({
+    data: { assignments },
+    meta: paginationMeta(pagination.page, pagination.pageSize, total),
+  });
 });
 
 router.get('/upcoming', async (req, res) => {

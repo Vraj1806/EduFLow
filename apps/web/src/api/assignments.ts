@@ -1,8 +1,14 @@
-import type { Assignment, CreateAssignmentInput, UpdateAssignmentInput } from '@eduflow/shared';
-import { apiFetch } from './client.ts';
+import type { Assignment, CreateAssignmentInput, PaginationMeta, UpdateAssignmentInput } from '@eduflow/shared';
+import { apiFetch, apiFetchWithMeta } from './client.ts';
 
-export async function getAssignments(): Promise<{ assignments: Assignment[] }> {
-  return apiFetch('/assignments');
+export async function getAssignments(
+  page = 1,
+  pageSize = 25,
+): Promise<{ assignments: Assignment[]; meta: PaginationMeta }> {
+  const { data, meta } = await apiFetchWithMeta<{ assignments: Assignment[] }>(
+    `/assignments?page=${page}&pageSize=${pageSize}`,
+  );
+  return { assignments: data.assignments, meta };
 }
 
 export async function getUpcomingAssignments(): Promise<{ assignments: Assignment[] }> {

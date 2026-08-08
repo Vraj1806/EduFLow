@@ -58,7 +58,7 @@ describe('reports', () => {
         percentage: null,
       });
       expect(res.body.data.report.rows).toEqual([]);
-      expect(res.body.data.export).toMatchObject({ available: false, formats: ['PDF', 'CSV'] });
+      expect(res.body.data.export).toMatchObject({ available: true, formats: ['PDF', 'CSV'] });
     });
 
     it('builds a report with per-record rows and totals', async () => {
@@ -95,6 +95,68 @@ describe('reports', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.report.rows).toEqual([]);
       expect(res.body.data.report.summary.totalSessions).toBe(0);
+    });
+  });
+
+  describe('GET /api/reports/attendance/export', () => {
+    it('exports a CSV with a header row, records, and summary', async () => {
+      const { session, s1 } = await seedCompletedSession();
+      const res = await request(app)
+        .get('/api/reports/attendance/export?format=csv&classId=CS&division=A')
+        .set('Cookie', session.accessToken);
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/csv/);
+      expect(res.headers['content-disposition']).toMatch(/attachment; filename="attendance-report-.*\.csv"/);
+
+      const body = typeof res.body === 'string' ? res.body : res.text;
+      expect(body.startsWith('\uFEFF')).toBe(true);
+      expect(body).toContain('Date,Student,Roll Number,Student ID,Status,Confidence');
+      expect(body).toContain(s1.name);
+      expect(body).toContain('Total sessions');
+      expect(body).toContain('Attendance %');
+    });
+
+    it('exports a valid PDF', async () => {
+      const { session } = await seedCompletedSession();
+      const res = await request(app)
+        .get('/api/reports/attendance/export?format=pdf')
+        .set('Cookie', session.accessToken);
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/application\/pdf/);
+      expect(res.headers['content-disposition']).toMatch(/attachment; filename="attendance-report-.*\.pdf"/);
+
+      const body = Buffer.isBuffer(res.body) ? res.body : Buffer.from(res.text ?? '');
+      expect(body.length).toBeGreaterThan(100);
+      expect(body.subarray(0, 4).toString('latin1')).toBe('%PDF');
+    });
+
+    it('exports an empty report as a valid CSV', async () => {
+      const session = await registerFaculty();
+      const res = await request(app)
+        .get('/api/reports/attendance/export?format=csv')
+        .set('Cookie', session.accessToken);
+
+      expect(res.status).toBe(200);
+      const body = typeof res.body === 'string' ? res.body : res.text;
+      expect(body).toContain('Date,Student,Roll Number,Student ID,Status,Confidence');
+      expect(body).toContain('Total students');
+    });
+
+    it('rejects an unknown format', async () => {
+      const session = await registerFaculty();
+      const res = await request(app)
+        .get('/api/reports/attendance/export?format=xlsx')
+        .set('Cookie', session.accessToken);
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('requires authentication', async () => {
+      const res = await request(app).get('/api/reports/attendance/export?format=csv');
+      expect(res.status).toBe(401);
     });
   });
 });

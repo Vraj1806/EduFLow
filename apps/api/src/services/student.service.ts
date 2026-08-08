@@ -1,5 +1,7 @@
 import { prisma } from '../db.js';
 import { AppError } from '../middleware/error.js';
+import type { PaginationOptions } from '../lib/pagination.js';
+import { deleteStoredImage, keyFromUrl, storeProfilePhoto } from './storage.service.js';
 
 export interface CreateStudentInput {
   studentId: string;
@@ -31,12 +33,19 @@ const studentInclude = {
   },
 } as const;
 
-export async function getAllStudents(facultyId: string) {
-  return prisma.student.findMany({
-    where: { facultyId },
-    orderBy: [{ class: 'asc' }, { rollNumber: 'asc' }],
-    include: studentInclude,
-  });
+export async function getAllStudents(facultyId: string, pagination: PaginationOptions) {
+  const where = { facultyId };
+  const [total, students] = await Promise.all([
+    prisma.student.count({ where }),
+    prisma.student.findMany({
+      where,
+      orderBy: [{ class: 'asc' }, { rollNumber: 'asc' }],
+      include: studentInclude,
+      skip: (pagination.page - 1) * pagination.pageSize,
+      take: pagination.pageSize,
+    }),
+  ]);
+  return { students, total };
 }
 
 export async function getStudentById(id: string, facultyId: string) {
@@ -69,15 +78,18 @@ export async function createStudent(input: CreateStudentInput) {
     throw new AppError(409, 'EMAIL_TAKEN', 'Email already exists');
   }
 
+  const { profilePhoto, ...data } = input;
+  const storedPhoto = profilePhoto ? await storeProfilePhoto(profilePhoto) : undefined;
+
   return prisma.student.create({
-    data: input,
+    data: { ...data, profilePhoto: storedPhoto?.url },
     include: studentInclude,
   });
 }
 
 export async function updateStudent(id: string, input: UpdateStudentInput, facultyId: string) {
   // Verify student exists and belongs to the faculty
-  await getStudentById(id, facultyId);
+  const existing = await getStudentById(id, facultyId);
 
   // If email is being updated, check it's not taken
   if (input.email) {
@@ -89,37 +101,58 @@ export async function updateStudent(id: string, input: UpdateStudentInput, facul
     }
   }
 
-  return prisma.student.update({
+  const { profilePhoto, ...data } = input;
+  const storedPhoto = profilePhoto ? await storeProfilePhoto(profilePhoto) : undefined;
+
+  const updated = await prisma.student.update({
     where: { id },
-    data: input,
+    data: storedPhoto ? { ...data, profilePhoto: storedPhoto.url } : data,
     include: studentInclude,
   });
+
+  // Replace the previous stored object once the new photo is committed.
+  if (storedPhoto && existing.profilePhoto) {
+    await deleteStoredImage(keyFromUrl(existing.profilePhoto)).catch(() => undefined);
+  }
+
+  return updated;
 }
 
 export async function deleteStudent(id: string, facultyId: string) {
   // Verify student exists and belongs to the faculty
-  await getStudentById(id, facultyId);
+  const student = await getStudentById(id, facultyId);
 
   // Cascade will automatically delete face profile
   await prisma.student.delete({ where: { id } });
+
+  if (student.profilePhoto) {
+    await deleteStoredImage(keyFromUrl(student.profilePhoto)).catch(() => undefined);
+  }
 }
 
-export async function searchStudents(query: string, facultyId: string) {
+export async function searchStudents(query: string, facultyId: string, pagination: PaginationOptions) {
   const searchTerm = query.trim().toLowerCase();
+  const where = {
+    facultyId,
+    OR: [
+      { name: { contains: searchTerm } },
+      { studentId: { contains: searchTerm } },
+      { rollNumber: { contains: searchTerm } },
+      { email: { contains: searchTerm } },
+      { class: { contains: searchTerm } },
+      { division: { contains: searchTerm } },
+    ],
+  };
 
-  return prisma.student.findMany({
-    where: {
-      facultyId,
-      OR: [
-        { name: { contains: searchTerm } },
-        { studentId: { contains: searchTerm } },
-        { rollNumber: { contains: searchTerm } },
-        { email: { contains: searchTerm } },
-        { class: { contains: searchTerm } },
-        { division: { contains: searchTerm } },
-      ],
-    },
-    orderBy: [{ class: 'asc' }, { rollNumber: 'asc' }],
-    include: studentInclude,
-  });
+  const [total, students] = await Promise.all([
+    prisma.student.count({ where }),
+    prisma.student.findMany({
+      where,
+      orderBy: [{ class: 'asc' }, { rollNumber: 'asc' }],
+      include: studentInclude,
+      skip: (pagination.page - 1) * pagination.pageSize,
+      take: pagination.pageSize,
+    }),
+  ]);
+  return { students, total };
 }

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
+import { parsePagination, paginationMeta } from '../lib/pagination.js';
 import * as noticeService from '../services/notice.service.js';
 
 const router = Router();
@@ -30,13 +31,21 @@ router.post('/', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
-  const notices = await noticeService.getNotices(req.user!.id);
-  res.json({ data: { notices } });
+  const pagination = parsePagination(req.query as Record<string, unknown>);
+  const { notices, total } = await noticeService.getNotices(req.user!.id, pagination);
+  res.json({
+    data: { notices },
+    meta: paginationMeta(pagination.page, pagination.pageSize, total),
+  });
 });
 
 router.get('/published', async (req, res) => {
-  const notices = await noticeService.getPublishedNotices(req.user!.id);
-  res.json({ data: { notices } });
+  const pagination = parsePagination(req.query as Record<string, unknown>);
+  const { notices, total } = await noticeService.getPublishedNotices(req.user!.id, pagination);
+  res.json({
+    data: { notices },
+    meta: paginationMeta(pagination.page, pagination.pageSize, total),
+  });
 });
 
 router.get('/:id', async (req, res) => {
