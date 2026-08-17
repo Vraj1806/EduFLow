@@ -189,6 +189,17 @@
   .animate-float {
     animation: float 20s ease-in-out infinite;
   }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--theme-surface) 25%,
+      var(--theme-surface-raised) 50%,
+      var(--theme-surface) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
 }
 
 @keyframes blurFadeUp {
@@ -227,10 +238,16 @@
   }
 }
 
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-blur-fade-up,
   .animate-slide-in-right,
-  .animate-float {
+  .animate-float,
+  .animate-shimmer {
     animation: none;
     opacity: 1;
   }

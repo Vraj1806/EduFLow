@@ -66,8 +66,60 @@ export async function getOverview(facultyId: string) {
   };
 }
 
+export async function getLowAttendanceStudents(facultyId: string, threshold = 75) {
+  const sessions = await prisma.attendanceSession.findMany({
+    where: { facultyId, status: 'COMPLETED' },
+    include: {
+      records: {
+        select: { studentId: true, status: true },
+      },
+    },
+  });
+
+  const studentMap = new Map<
+    string,
+    { name: string; rollNumber: string; class: string; division: string; present: number; total: number }
+  >();
+
+  const studentInfo = await prisma.student.findMany({
+    where: { facultyId },
+    select: { id: true, name: true, rollNumber: true, class: true, division: true },
+  });
+  const infoMap = new Map(studentInfo.map((s) => [s.id, s]));
+
+  for (const session of sessions) {
+    for (const record of session.records) {
+      const info = infoMap.get(record.studentId);
+      if (!info) continue;
+      let entry = studentMap.get(record.studentId);
+      if (!entry) {
+        entry = {
+          name: info.name,
+          rollNumber: info.rollNumber,
+          class: info.class,
+          division: info.division,
+          present: 0,
+          total: 0,
+        };
+        studentMap.set(record.studentId, entry);
+      }
+      entry.total++;
+      if (record.status === 'PRESENT') entry.present++;
+    }
+  }
+
+  return Array.from(studentMap.entries())
+    .map(([studentId, stats]) => ({
+      studentId,
+      ...stats,
+      percentage: stats.total > 0 ? (stats.present / stats.total) * 100 : 0,
+    }))
+    .filter((s) => s.percentage < threshold && s.total > 0)
+    .sort((a, b) => a.percentage - b.percentage);
+}
+
 export async function getAttendanceTrend(facultyId: string, days: number) {
-  const safeDays = Math.min(Math.max(days, 1), 60);
+  const safeDays = Math.min(Math.max(days, 1), 365);
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - (safeDays - 1));

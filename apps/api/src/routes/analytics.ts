@@ -24,4 +24,11 @@ router.get('/classes', async (req, res) => {
   res.json({ data: { classes } });
 });
 
+// GET /analytics/low-attendance?threshold=75 - Students below attendance threshold
+router.get('/low-attendance', async (req, res) => {
+  const threshold = Number(req.query.threshold ?? 75);
+  const students = await analyticsService.getLowAttendanceStudents(req.user!.id, threshold);
+  res.json({ data: { students } });
+});
+
 export const analyticsRouter = router;

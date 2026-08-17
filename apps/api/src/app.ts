@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { getConfig } from './config.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
+import { dashboardRouter } from './routes/dashboard.js';
 import { aiRouter } from './routes/ai.js';
 import { analyticsRouter } from './routes/analytics.js';
 import { assignmentRouter } from './routes/assignments.js';
@@ -80,6 +81,7 @@ export function createApp() {
   app.use('/api/notices', noticeRouter);
   app.use('/api/notifications', notificationRouter);
   app.use('/api/analytics', analyticsRouter);
+  app.use('/api/dashboard', dashboardRouter);
   app.use('/api/reports', reportRouter);
   app.use('/api/ai', aiRouter);
 

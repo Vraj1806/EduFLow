@@ -23,17 +23,34 @@ interface AppShellExperimentProps {
   children: ReactNode;
 }
 
-const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/dashboard/students', label: 'Students', icon: Users },
-  { path: '/dashboard/attendance', label: 'Attendance', icon: ClipboardCheck },
-  { path: '/dashboard/assignments', label: 'Assignments', icon: FileText },
-  { path: '/dashboard/notices', label: 'Notices', icon: Bell },
-  { path: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-  { path: '/dashboard/reports', label: 'Reports', icon: FileBarChart },
-  { path: '/dashboard/settings', label: 'Settings', icon: Settings },
-  { path: '/dashboard/help', label: 'Help / Support', icon: HelpCircle },
+const navSections = [
+  {
+    label: 'Main',
+    items: [
+      { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/dashboard/students', label: 'Students', icon: Users },
+      { path: '/dashboard/attendance', label: 'Attendance', icon: ClipboardCheck },
+      { path: '/dashboard/assignments', label: 'Assignments', icon: FileText },
+      { path: '/dashboard/notices', label: 'Notices', icon: Bell },
+    ],
+  },
+  {
+    label: 'Intelligence',
+    items: [
+      { path: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+      { path: '/dashboard/reports', label: 'Reports', icon: FileBarChart },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { path: '/dashboard/settings', label: 'Settings', icon: Settings },
+      { path: '/dashboard/help', label: 'Help / Support', icon: HelpCircle },
+    ],
+  },
 ];
+
+const allNavItems = navSections.flatMap((s) => s.items);
 
 export function AppShellExperiment({ children }: AppShellExperimentProps) {
   const { user, logout } = useAuth();
@@ -57,41 +74,63 @@ export function AppShellExperiment({ children }: AppShellExperimentProps) {
     <div className="min-h-screen bg-[var(--theme-bg)] text-[var(--theme-fg)]">
       {/* Desktop Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-[var(--theme-border)] bg-[var(--theme-sidebar-bg)] lg:flex">
-        <div className="flex items-center justify-between border-b border-[var(--theme-border)] px-6 py-5">
+        {/* Brand */}
+        <div className="flex items-center justify-between border-b border-[var(--theme-border)] px-5 py-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--theme-primary)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--theme-primary)] shadow-lg shadow-[var(--theme-primary)]/20">
               <Sparkles size={18} className="text-[var(--theme-bg)]" strokeWidth={2.5} />
             </div>
-            <span
-              className="text-xl font-bold tracking-tight text-[var(--theme-fg)]"
-              style={{ fontFamily: 'Space Grotesk, sans-serif' }}
-            >
-              EduFlow
-            </span>
+            <div>
+              <span
+                className="block text-lg font-bold tracking-tight text-[var(--theme-fg)]"
+                style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+              >
+                EduFlow
+              </span>
+              <span className="block text-[10px] font-medium tracking-wide text-[var(--theme-muted)]">
+                AI-Powered Faculty Platform
+              </span>
+            </div>
           </div>
           <NotificationBell />
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                  active
-                    ? 'bg-[var(--theme-primary)]/10 text-[var(--theme-primary)]'
-                    : 'text-[var(--theme-muted)] hover:bg-[var(--theme-surface)] hover:text-[var(--theme-fg)]'
-                }`}
-              >
-                <Icon size={18} />
-                {item.label}
-              </NavLink>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          {navSections.map((section, si) => (
+            <div key={section.label} className={si > 0 ? 'mt-6' : ''}>
+              <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">
+                {section.label}
+              </div>
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.path);
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                        active
+                          ? 'bg-[var(--theme-primary)]/10 text-[var(--theme-primary)] shadow-sm'
+                          : 'text-[var(--theme-muted)] hover:bg-[var(--theme-surface)] hover:text-[var(--theme-fg)]'
+                      }`}
+                    >
+                      <Icon
+                        size={18}
+                        className={`transition-colors ${
+                          active
+                            ? 'text-[var(--theme-primary)]'
+                            : 'text-[var(--theme-muted)] group-hover:text-[var(--theme-fg)]'
+                        }`}
+                      />
+                      {item.label}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* User Section */}
@@ -124,12 +163,14 @@ export function AppShellExperiment({ children }: AppShellExperimentProps) {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--theme-primary)]">
               <Sparkles size={16} className="text-[var(--theme-bg)]" strokeWidth={2.5} />
             </div>
-            <span
-              className="text-lg font-bold tracking-tight text-[var(--theme-fg)]"
-              style={{ fontFamily: 'Space Grotesk, sans-serif' }}
-            >
-              EduFlow
-            </span>
+            <div>
+              <span
+                className="block text-lg font-bold tracking-tight text-[var(--theme-fg)]"
+                style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+              >
+                EduFlow
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
@@ -154,7 +195,7 @@ export function AppShellExperiment({ children }: AppShellExperimentProps) {
               className="overflow-hidden border-t border-[var(--theme-border)] bg-[var(--theme-sidebar-bg)]"
             >
               <div className="space-y-1 p-4">
-                {navItems.map((item) => {
+                {allNavItems.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.path);
                   return (

@@ -137,7 +137,7 @@ describe('analytics', () => {
         .set('Cookie', session.accessToken);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.trend).toHaveLength(60);
+      expect(res.body.data.trend).toHaveLength(365);
     });
 
     it('reports present/absent totals for completed sessions', async () => {
