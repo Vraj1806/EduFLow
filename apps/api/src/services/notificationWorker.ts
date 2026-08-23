@@ -9,6 +9,18 @@ import { deliverPendingNotifications } from './notification.service.js';
  * prunes expired refresh-token rows. It only runs when NOTIFICATIONS_ENABLED=true
  * and never keeps the process alive on its own (`timer.unref()`), so tests and
  * one-off scripts exit cleanly.
+ *
+ * WHERE THIS RUNS:
+ *   - local dev:  started by src/index.ts alongside the Express listener.
+ *   - production: NOT in Vercel serverless functions — setInterval timers do
+ *     not survive between invocations, so the queue would never drain
+ *     reliably. Run this worker as a long-lived process instead (any small
+ *     always-on host: Railway/Render/Fly worker, or a VPS systemd service)
+ *     by executing: `node -e "require('./dist/services/notificationWorker.js').startNotificationWorker()"`
+ *     with the same environment variables as the API (it only needs
+ *     DATABASE_URL + SMTP_* + NOTIFICATIONS_ENABLED=true).
+ *     Alternative: keep it disabled on serverless and drain the queue via an
+ *     authenticated cron trigger that calls notification.service directly.
  */
 
 let timer: NodeJS.Timeout | null = null;

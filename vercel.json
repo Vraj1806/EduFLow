@@ -1,6 +1,14 @@
 {
-  "buildCommand": "npm run build -w packages/shared && npm run build -w apps/api",
-  "outputDirectory": "apps/api/dist",
-  "installCommand": "npm install",
-  "framework": null
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm install && npm run build -w packages/shared",
+  "buildCommand": "npm run build -w apps/api",
+  "functions": {
+    "apps/api/api/index.ts": {
+      "runtime": "@vercel/node"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/apps/api/api/index" }
+  ]
 }

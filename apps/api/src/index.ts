@@ -10,6 +10,9 @@ const app = createApp();
 
 const server = app.listen(cfg.PORT, () => {
   console.log(`[api] EduFlow API listening on http://localhost:${cfg.PORT}`);
+  // Local-dev / long-lived-process only. The Vercel serverless entrypoint
+  // (api/index.ts) never starts the worker — see services/notificationWorker.ts
+  // for production placement.
   startNotificationWorker();
 });
 

@@ -16,5 +16,5 @@
       "@eduflow/shared": ["../../packages/shared/src/index.ts"]
     }
   },
-  "include": ["src", "tests", "prisma"]
+  "include": ["src", "api", "tests", "prisma"]
 }
