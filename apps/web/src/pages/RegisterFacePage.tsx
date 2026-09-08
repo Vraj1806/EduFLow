@@ -21,13 +21,45 @@ export function RegisterFacePage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     if (id) loadStudent();
     return () => {
-      stopCamera();
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!stream) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.srcObject = stream;
+
+    let cancelled = false;
+    async function play(el: HTMLVideoElement) {
+      try {
+        if (cancelled) return;
+        await el.play();
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Camera playback failed');
+      }
+    }
+
+    if (video.readyState >= 2) {
+      play(video);
+    } else {
+      video.onloadedmetadata = () => play(video);
+    }
+
+    return () => {
+      cancelled = true;
+      video.onloadedmetadata = null;
+      video.srcObject = null;
+    };
+  }, [stream]);
 
   async function loadStudent() {
     if (!id) return;
@@ -49,10 +81,8 @@ export function RegisterFacePage() {
         video: { width: 640, height: 480, facingMode: 'user' },
         audio: false,
       });
+      streamRef.current = mediaStream;
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
       setCameraActive(true);
     } catch {
       setError('Camera access denied. Please allow camera access or use image upload.');
@@ -60,13 +90,9 @@ export function RegisterFacePage() {
   }
 
   function stopCamera() {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setStream(null);
     setCameraActive(false);
   }
 
@@ -218,10 +244,10 @@ export function RegisterFacePage() {
                       autoPlay
                       playsInline
                       muted
-                      className="w-full"
-                      style={{ transform: 'scaleX(-1)' }}
+                      className="h-full w-full object-cover"
+                      style={{ transform: 'scaleX(-1)', aspectRatio: '4 / 3' }}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                       <div className="h-64 w-64 rounded-full border-4 border-[var(--theme-primary)]/50" />
                     </div>
                   </div>
