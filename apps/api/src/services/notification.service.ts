@@ -19,18 +19,34 @@ export interface CreateNotificationInput {
   title: string;
   message: string;
   recipient: string;
+  /**
+   * Stable key identifying the underlying event (e.g. "sessionId:studentId:ABSENCE").
+   * When provided the notification is created idempotently — a second enqueue for
+   * the same event returns the existing row and never produces a duplicate. Backed
+   * by a unique DB constraint so it holds across processes, not just in memory.
+   */
+  dedupeKey?: string;
 }
 
 export async function createNotification(input: CreateNotificationInput) {
-  return prisma.notification.create({
-    data: {
-      type: input.type,
-      title: input.title,
-      message: input.message,
-      recipient: input.recipient,
-      status: 'PENDING',
-    },
-  });
+  const data = {
+    type: input.type,
+    title: input.title,
+    message: input.message,
+    recipient: input.recipient,
+    status: 'PENDING' as const,
+    ...(input.dedupeKey ? { dedupeKey: input.dedupeKey } : {}),
+  };
+
+  if (input.dedupeKey) {
+    return prisma.notification.upsert({
+      where: { dedupeKey: input.dedupeKey },
+      create: data,
+      update: {},
+    });
+  }
+
+  return prisma.notification.create({ data });
 }
 
 export async function getNotifications(recipient: string, pagination: PaginationOptions) {

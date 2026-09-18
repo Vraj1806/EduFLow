@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../db.js';
 import type { PaginationOptions } from '../lib/pagination.js';
 import { AppError } from '../middleware/error.js';
+import { createNotification } from './notification.service.js';
 
 export interface CreateAttendanceSessionInput {
   facultyId: string;
@@ -35,6 +36,31 @@ const sessionInclude = {
     },
   },
 } as const;
+
+/**
+ * Queue one ABSENCE notification for a student, addressed to the student email.
+ *
+ * The `dedupeKey` ties the notification to a specific attendance event
+ * (session + student + ABSENCE) so re-running the same flow can never queue a
+ * second email for the same absence. Delivery itself is handled later by the
+ * SMTP worker — enqueueing only touches the database, so SMTP configuration
+ * cannot make attendance marking fail.
+ */
+export async function enqueueAbsenceNotification(
+  session: { id: string; classId: string; division: string; date: Date },
+  student: { name: string; rollNumber?: string; email: string }
+) {
+  const dateLabel = session.date.toISOString().slice(0, 10);
+  const roll = student.rollNumber ? ` (${student.rollNumber})` : '';
+
+  await createNotification({
+    type: 'ABSENCE',
+    title: 'Absence recorded',
+    message: `${student.name}${roll} was marked ABSENT for ${session.classId} ${session.division} on ${dateLabel}.`,
+    recipient: student.email,
+    dedupeKey: `absence:${session.id}:${student.email}`,
+  });
+}
 
 export async function createAttendanceSession(input: CreateAttendanceSessionInput) {
   return prisma.attendanceSession.create({
@@ -133,7 +159,10 @@ export async function confirmAttendance(sessionId: string, facultyId: string) {
 
   const markedStudentIds = session.records.map((r) => r.studentId);
 
-  // Mark unmarked students as absent
+  // Mark unmarked students as absent and notify them via email.
+  // enqueueAbsenceNotification uses a dedupeKey keyed on session+student so
+  // re-running the same flow can never produce a second notification for the
+  // same absence event.
   for (const student of allStudents) {
     if (!markedStudentIds.includes(student.id)) {
       await prisma.attendanceRecord.create({
@@ -143,6 +172,7 @@ export async function confirmAttendance(sessionId: string, facultyId: string) {
           status: 'ABSENT',
         },
       });
+      await enqueueAbsenceNotification(session, student);
     }
   }
 
@@ -160,9 +190,16 @@ export async function updateAttendanceRecord(
   status: 'PRESENT' | 'ABSENT' | 'EXCUSED',
   facultyId: string
 ) {
-  await getAttendanceSessionById(sessionId, facultyId);
+  const session = await getAttendanceSessionById(sessionId, facultyId);
 
-  return prisma.attendanceRecord.upsert({
+  const existing = await prisma.attendanceRecord.findUnique({
+    where: {
+      sessionId_studentId: { sessionId, studentId },
+    },
+    select: { status: true },
+  });
+
+  const record = await prisma.attendanceRecord.upsert({
     where: {
       sessionId_studentId: { sessionId, studentId },
     },
@@ -175,6 +212,20 @@ export async function updateAttendanceRecord(
       status,
     },
   });
+
+  // Notify only on a transition INTO ABSENT. Repeated ABSENT updates, or a
+  // correction from ABSENT back to PRESENT/EXCUSED, must not send another email.
+  if (status === 'ABSENT' && existing?.status !== 'ABSENT') {
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      select: { name: true, rollNumber: true, email: true },
+    });
+    if (student) {
+      await enqueueAbsenceNotification(session, student);
+    }
+  }
+
+  return record;
 }
 
 export async function getStudentAttendance(studentId: string, facultyId: string) {

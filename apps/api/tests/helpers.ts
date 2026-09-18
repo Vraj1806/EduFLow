@@ -137,6 +137,7 @@ export async function createStudentViaApi(
     name: string;
     class: string;
     division: string;
+    email: string;
   };
 }
 

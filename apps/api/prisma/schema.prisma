@@ -193,6 +193,9 @@ model Notification {
   attempts   Int                @default(0)
   lastError  String?
   sentAt     DateTime?
+  // Stable key that identifies the underlying event (e.g. "sessionId:studentId:ABSENCE")
+  // so a second enqueue for the same event is a no-op instead of a duplicate email.
+  dedupeKey  String?            @unique
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
 
