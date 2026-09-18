@@ -1,8 +1,15 @@
 """Uvicorn entrypoint for the EduFlow ML service."""
 
 import os
+from pathlib import Path
 
 import uvicorn
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+except ImportError:
+    pass
 
 
 def main() -> None:

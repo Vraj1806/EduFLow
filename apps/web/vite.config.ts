@@ -5,6 +5,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    host: true,
     port: 5173,
     // Proxy API calls to the backend so the browser sees a single origin
     // (no CORS, and httpOnly cookies are set/read on the frontend origin).

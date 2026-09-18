@@ -8,7 +8,10 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
+    "dev": "concurrently -n api,web,ml -c blue,green,yellow \"npm run dev -w apps/api\" \"npm run dev -w apps/web\" \"npm run dev:ml\"",
+    "dev:api": "npm run dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:ml": "powershell -NoProfile -Command \"cd apps/ml; .\\.venv\\Scripts\\python.exe -m src.main\"",
     "build": "npm run build -w packages/shared && npm run build --workspaces --if-present",
     "build:api": "npm run build -w packages/shared && npm run build -w apps/api",
     "test": "npm run test --workspaces --if-present",
