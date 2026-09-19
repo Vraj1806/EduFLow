@@ -14,17 +14,29 @@ enum Role {
   FACULTY
 }
 
-model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  role          Role           @default(FACULTY)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+// Which email account a faculty's outbound notifications are sent from.
+// Phase 1 only supports EDUFLOW (the central SMTP account). GMAIL is reserved
+// for the planned OAuth 2.0 personal-account integration (Phase 2).
+enum EmailPreference {
+  EDUFLOW
+  GMAIL
+}
 
-  students      Student[]
-  refreshTokens RefreshToken[]
+model User {
+  id              String          @id @default(cuid())
+  email           String          @unique
+  passwordHash    String
+  name            String
+  role             Role            @default(FACULTY)
+  // Sender account for outbound notifications. Never stores credentials —
+  // secrets always stay server-side. See email settings endpoints.
+  emailPreference  EmailPreference @default(EDUFLOW)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  students         Student[]
+  refreshTokens    RefreshToken[]
+  notifications    Notification[]
 
   @@map("users")
 }
@@ -129,7 +141,7 @@ model AttendanceRecord {
   markedAt   DateTime         @default(now())
 
   session    AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  student    Student           @relation(fields: [studentId], references: [id])
+  student    Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, studentId])
   @@index([studentId])
@@ -193,13 +205,20 @@ model Notification {
   attempts   Int                @default(0)
   lastError  String?
   sentAt     DateTime?
+  // Which faculty triggered this notification. Delivery resolves the sender
+  // account from this row: null/EDUFLOW -> central SMTP account. Kept on the
+  // row so delivery is correct even when the notification is drained later.
+  senderId   String?
   // Stable key that identifies the underlying event (e.g. "sessionId:studentId:ABSENCE")
   // so a second enqueue for the same event is a no-op instead of a duplicate email.
   dedupeKey  String?            @unique
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
 
+  sender         User?            @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
   @@index([status])
   @@index([recipient])
+  @@index([senderId])
   @@map("notifications")
 }

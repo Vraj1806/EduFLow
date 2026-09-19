@@ -1,6 +1,7 @@
 import { getConfig } from '../config.js';
 import { prisma } from '../db.js';
 import type { PaginationOptions } from '../lib/pagination.js';
+import { AppError } from '../middleware/error.js';
 import { sendMail } from './mailer.js';
 
 /**
@@ -20,6 +21,12 @@ export interface CreateNotificationInput {
   message: string;
   recipient: string;
   /**
+   * Faculty who triggered this notification. Delivery resolves the outbound
+   * sender account (EduFlow central vs personal Gmail) from this row. When
+   * omitted the notification is sent from the central SMTP account.
+   */
+  senderId?: string;
+  /**
    * Stable key identifying the underlying event (e.g. "sessionId:studentId:ABSENCE").
    * When provided the notification is created idempotently — a second enqueue for
    * the same event returns the existing row and never produces a duplicate. Backed
@@ -35,6 +42,7 @@ export async function createNotification(input: CreateNotificationInput) {
     message: input.message,
     recipient: input.recipient,
     status: 'PENDING' as const,
+    ...(input.senderId ? { senderId: input.senderId } : {}),
     ...(input.dedupeKey ? { dedupeKey: input.dedupeKey } : {}),
   };
 
@@ -95,6 +103,34 @@ async function resolveRecipientAddress(recipient: string): Promise<string> {
   return user.email;
 }
 
+/**
+ * Resolve which server-side account a notification is sent FROM.
+ *
+ * Phase 1: only the central EduFlow SMTP account (`SMTP_FROM`). When a
+ * notification carries a `senderId` whose preference is GMAIL (Phase 2, not
+ * implemented) delivery fails loudly — a notification with a missing sender is
+ * never silently sent from the central account.
+ */
+async function resolveSenderFrom(senderId: string | null): Promise<string> {
+  if (!senderId) return getConfig().SMTP_FROM;
+
+  const sender = await prisma.user.findUnique({
+    where: { id: senderId },
+    select: { emailPreference: true },
+  });
+  if (!sender) {
+    throw new Error(`Cannot deliver: sender account "${senderId}" no longer exists`);
+  }
+  if (sender.emailPreference !== 'EDUFLOW') {
+    throw new AppError(
+      503,
+      'EMAIL_ACCOUNT_NOT_LINKED',
+      'This notification is addressed from a personal Gmail account, which is not available yet.',
+    );
+  }
+  return getConfig().SMTP_FROM;
+}
+
 export interface DeliveryResult {
   skipped: boolean;
   attempted: number;
@@ -128,7 +164,8 @@ export async function deliverPendingNotifications(options: { limit?: number } = 
   for (const notification of pending) {
     try {
       const to = await resolveRecipientAddress(notification.recipient);
-      await sendMail({ to, subject: notification.title, text: notification.message });
+      const from = await resolveSenderFrom(notification.senderId);
+      await sendMail({ to, subject: notification.title, text: notification.message }, { from });
       await prisma.notification.update({
         where: { id: notification.id },
         data: { status: 'SENT', sentAt: new Date() },

@@ -48,7 +48,8 @@ const sessionInclude = {
  */
 export async function enqueueAbsenceNotification(
   session: { id: string; classId: string; division: string; date: Date },
-  student: { name: string; rollNumber?: string; email: string }
+  student: { name: string; rollNumber?: string; email: string },
+  senderId?: string
 ) {
   const dateLabel = session.date.toISOString().slice(0, 10);
   const roll = student.rollNumber ? ` (${student.rollNumber})` : '';
@@ -58,6 +59,7 @@ export async function enqueueAbsenceNotification(
     title: 'Absence recorded',
     message: `${student.name}${roll} was marked ABSENT for ${session.classId} ${session.division} on ${dateLabel}.`,
     recipient: student.email,
+    senderId,
     dedupeKey: `absence:${session.id}:${student.email}`,
   });
 }
@@ -172,7 +174,7 @@ export async function confirmAttendance(sessionId: string, facultyId: string) {
           status: 'ABSENT',
         },
       });
-      await enqueueAbsenceNotification(session, student);
+      await enqueueAbsenceNotification(session, student, facultyId);
     }
   }
 
@@ -221,7 +223,7 @@ export async function updateAttendanceRecord(
       select: { name: true, rollNumber: true, email: true },
     });
     if (student) {
-      await enqueueAbsenceNotification(session, student);
+      await enqueueAbsenceNotification(session, student, facultyId);
     }
   }
 

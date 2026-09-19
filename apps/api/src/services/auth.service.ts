@@ -16,6 +16,7 @@ interface UserRow {
   email: string;
   name: string;
   role: 'ADMIN' | 'FACULTY';
+  emailPreference: 'EDUFLOW' | 'GMAIL';
   createdAt: Date;
 }
 
@@ -25,6 +26,7 @@ function toAuthUser(user: UserRow): AuthUser {
     email: user.email,
     name: user.name,
     role: user.role,
+    emailPreference: user.emailPreference,
     createdAt: user.createdAt.toISOString(),
   };
 }

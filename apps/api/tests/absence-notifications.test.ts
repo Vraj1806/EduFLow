@@ -87,6 +87,7 @@ describe('absence notifications', () => {
       expect(notifications[0]!.message).toContain('ABSENT');
       expect(notifications[0]!.message).toContain('CS A');
       expect(notifications[0]!.dedupeKey).toBe(`absence:${sessionId}:${s2.email}`);
+      expect(notifications[0]!.senderId).toBe(faculty.user.id);
     });
 
     it('creates separate notifications for multiple absent students', async () => {
@@ -220,6 +221,7 @@ describe('absence notifications', () => {
       expect(sendMailMock).toHaveBeenCalledTimes(1);
       expect(sendMailMock).toHaveBeenCalledWith(
         expect.objectContaining({ to: s2.email, subject: 'Absence recorded' }),
+        expect.objectContaining({ from: expect.stringContaining('eduflow') }),
       );
 
       const notification = await prisma.notification.findFirstOrThrow();

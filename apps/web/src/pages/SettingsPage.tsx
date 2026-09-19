@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Bot, KeyRound, Monitor, Moon, Save, Sparkles, Sun, User } from 'lucide-react';
-import type { AIStatus, AuthUser } from '@eduflow/shared';
+import { Bot, KeyRound, Mail, Monitor, Moon, Save, Sparkles, Sun, User } from 'lucide-react';
+import type { AIStatus, AuthUser, EmailPreference, EmailSettings } from '@eduflow/shared';
 import * as facultyApi from '../api/faculty.ts';
 import * as aiApi from '../api/ai.ts';
 import { useAuth } from '../auth/AuthContext.tsx';
@@ -44,6 +44,12 @@ export function SettingsPage() {
   // AI status
   const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
 
+  // Email settings
+  const [emailSettings, setEmailSettings] = useState<EmailSettings | null>(null);
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailSaved, setEmailSaved] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+
   useEffect(() => {
     if (user) {
       setName(user.name);
@@ -54,6 +60,29 @@ export function SettingsPage() {
   useEffect(() => {
     aiApi.getAIStatus().then(setAiStatus).catch(() => setAiStatus(null));
   }, []);
+
+  useEffect(() => {
+    facultyApi
+      .getEmailSettings()
+      .then(({ settings }) => setEmailSettings(settings))
+      .catch(() => setEmailSettings(null));
+  }, []);
+
+  async function handleEmailSenderSelect(preference: EmailPreference) {
+    if (!emailSettings || preference === emailSettings.emailPreference) return;
+    setEmailSaving(true);
+    setEmailError(null);
+    setEmailSaved(false);
+    try {
+      const { settings } = await facultyApi.updateEmailSettings({ emailPreference: preference });
+      setEmailSettings(settings);
+      setEmailSaved(true);
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : 'Failed to update email settings');
+    } finally {
+      setEmailSaving(false);
+    }
+  }
 
   async function handleProfileSubmit(e: FormEvent) {
     e.preventDefault();
@@ -214,6 +243,57 @@ export function SettingsPage() {
                 {passwordSaving ? 'Updating…' : 'Update Password'}
               </button>
             </form>
+          </div>
+
+          {/* Email Notifications */}
+          <div className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-6 shadow-[var(--theme-card-shadow)]">
+            <div className="mb-5 flex items-center gap-2">
+              <Mail size={18} className="text-[var(--theme-primary)]" />
+              <h2 className="font-semibold" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                Email Notifications
+              </h2>
+            </div>
+
+            {emailError && <ErrorBanner message={emailError} />}
+            {emailSaved && <SuccessBanner message="Email sender preference updated" />}
+
+            <div className="mb-4 text-sm text-[var(--theme-muted)]">
+              Choose which account sends your absence alerts, assignment reminders, and notices to
+              students. Credentials are always managed by EduFlow — you never provide or see SMTP
+              passwords.
+            </div>
+
+            {emailSettings ? (
+              <div role="radiogroup" aria-label="Email sender" className="space-y-3">
+                {emailSettings.senders.map((sender) => {
+                  const active = emailSettings.emailPreference === sender.id;
+                  return (
+                    <button
+                      key={sender.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      disabled={!sender.available || emailSaving}
+                      onClick={() => handleEmailSenderSelect(sender.id)}
+                      className={`flex w-full items-center justify-between gap-2 rounded-lg border p-4 text-left transition-all disabled:cursor-not-allowed ${
+                        active
+                          ? 'border-[var(--theme-primary)]/40 bg-[var(--theme-primary)]/10'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-surface-raised)] hover:border-[var(--theme-primary)]/30'
+                      }`}
+                    >
+                      <span className="text-sm font-medium text-[var(--theme-fg)]">{sender.label}</span>
+                      {active ? (
+                        <StatusBadge label="Active" tone="green" />
+                      ) : sender.available ? null : (
+                        <StatusBadge label="Coming soon" tone="amber" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--theme-muted)]">Unable to load email settings.</p>
+            )}
           </div>
 
           {/* Appearance */}

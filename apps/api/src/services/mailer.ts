@@ -45,10 +45,10 @@ export function getTransport(): Transporter {
   return transport;
 }
 
-export async function sendMail(message: MailMessage): Promise<void> {
+export async function sendMail(message: MailMessage, options: { from?: string } = {}): Promise<void> {
   const cfg = getConfig();
   await getTransport().sendMail({
-    from: cfg.SMTP_FROM,
+    from: options.from ?? cfg.SMTP_FROM,
     to: message.to,
     subject: message.subject,
     text: message.text,

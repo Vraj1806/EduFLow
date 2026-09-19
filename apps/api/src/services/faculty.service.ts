@@ -10,6 +10,7 @@ interface UserRow {
   email: string;
   name: string;
   role: 'ADMIN' | 'FACULTY';
+  emailPreference: 'EDUFLOW' | 'GMAIL';
   createdAt: Date;
 }
 
@@ -19,8 +20,55 @@ function toAuthUser(user: UserRow): AuthUser {
     email: user.email,
     name: user.name,
     role: user.role,
+    emailPreference: user.emailPreference,
     createdAt: user.createdAt.toISOString(),
   };
+}
+
+// Senders offered in the email settings UI. Phase 1 ships EduFlow only; Gmail
+// is advertised as "coming soon" but cannot be selected yet.
+const EMAIL_SENDERS = [
+  { id: 'EDUFLOW' as const, label: 'Use EduFlow Email', available: true },
+  { id: 'GMAIL' as const, label: 'Use Personal Gmail (OAuth)', available: false },
+];
+
+function toEmailSettings(user: { emailPreference: 'EDUFLOW' | 'GMAIL' }) {
+  return { emailPreference: user.emailPreference, senders: EMAIL_SENDERS };
+}
+
+export async function getEmailSettings(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { emailPreference: true },
+  });
+  if (!user) {
+    throw new AppError(404, 'USER_NOT_FOUND', 'Account not found');
+  }
+  return toEmailSettings(user);
+}
+
+/**
+ * Update the faculty's outbound email preference. Central SMTP credentials are
+ * never touched — the preference only selects which server-side account is used.
+ * GMAIL is reserved for Phase 2 (OAuth) and is explicitly rejected for now.
+ */
+export async function updateEmailSettings(
+  userId: string,
+  input: { emailPreference: 'EDUFLOW' | 'GMAIL' },
+) {
+  if (input.emailPreference !== 'EDUFLOW') {
+    throw new AppError(
+      501,
+      'NOT_IMPLEMENTED',
+      'Personal Gmail sending is not available yet. Choose "Use EduFlow Email".',
+    );
+  }
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { emailPreference: input.emailPreference },
+    select: { emailPreference: true },
+  });
+  return toEmailSettings(user);
 }
 
 export async function updateProfile(

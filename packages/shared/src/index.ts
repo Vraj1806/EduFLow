@@ -9,6 +9,13 @@
 
 export type Role = 'ADMIN' | 'FACULTY';
 
+/**
+ * Which account a faculty's outbound notifications are sent from.
+ * Phase 1 supports only EDUFLOW (the central EduFlow SMTP account). GMAIL is
+ * reserved for the planned OAuth 2.0 personal-account integration (Phase 2).
+ */
+export type EmailPreference = 'EDUFLOW' | 'GMAIL';
+
 /** The current faculty/admin user, as returned by the API. */
 export interface AuthUser {
   id: string;
@@ -16,6 +23,7 @@ export interface AuthUser {
   name: string;
   role: Role;
   createdAt: string;
+  emailPreference: EmailPreference;
 }
 
 /** Minimal identity carried on authenticated requests (set by the API middleware). */
@@ -336,6 +344,14 @@ export interface UpdateProfileInput {
 export interface ChangePasswordInput {
   currentPassword: string;
   newPassword: string;
+}
+
+/** The sender options a teacher can pick from (Phase 1: EduFlow only). */
+export type EmailSenderOption = { id: EmailPreference; label: string; available: boolean };
+
+export interface EmailSettings {
+  emailPreference: EmailPreference;
+  senders: EmailSenderOption[];
 }
 
 // ---- AI service ----

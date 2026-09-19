@@ -146,6 +146,7 @@ describe('notifications', () => {
       expect(sendMailMock).toHaveBeenCalledTimes(2);
       expect(sendMailMock).toHaveBeenCalledWith(
         expect.objectContaining({ to: 'faculty@test.com', subject: 'One', text: 'first' }),
+        expect.objectContaining({ from: expect.stringContaining('eduflow') }),
       );
 
       const all = await prisma.notification.findMany();
@@ -163,6 +164,7 @@ describe('notifications', () => {
 
       expect(sendMailMock).toHaveBeenCalledWith(
         expect.objectContaining({ to: 'parent@example.com' }),
+        expect.objectContaining({ from: expect.stringContaining('eduflow') }),
       );
     });
 

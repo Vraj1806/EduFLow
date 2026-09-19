@@ -17,6 +17,10 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(8, 'Password must be at least 8 characters').max(128),
 });
 
+const emailSettingsSchema = z.object({
+  emailPreference: z.enum(['EDUFLOW', 'GMAIL']),
+});
+
 // GET /faculty/me - Current faculty profile
 router.get('/me', async (req, res) => {
   const user = await authService.getUserById(req.user!.id);
@@ -38,6 +42,19 @@ router.put('/password', async (req, res) => {
   const input = changePasswordSchema.parse(req.body);
   await facultyService.changePassword(req.user!.id, input.currentPassword, input.newPassword);
   res.status(204).end();
+});
+
+// GET /faculty/email-settings - Current outbound email preference
+router.get('/email-settings', async (req, res) => {
+  const settings = await facultyService.getEmailSettings(req.user!.id);
+  res.json({ data: { settings } });
+});
+
+// PUT /faculty/email-settings - Select the sender account for notifications
+router.put('/email-settings', async (req, res) => {
+  const input = emailSettingsSchema.parse(req.body);
+  const settings = await facultyService.updateEmailSettings(req.user!.id, input);
+  res.json({ data: { settings } });
 });
 
 export const facultyRouter = router;
